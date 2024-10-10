@@ -1,25 +1,37 @@
 import { EnteDrawer } from "@/base/components/EnteDrawer";
+import type { MiniDialogAttributes } from "@/base/components/MiniDialog";
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import { Titlebar } from "@/base/components/Titlebar";
 import { EllipsizedTypography } from "@/base/components/Typography";
 import { nameAndExtension } from "@/base/file";
 import log from "@/base/log";
+import type { Location } from "@/base/types";
 import type { ParsedMetadata } from "@/media/file-metadata";
 import {
-    getUICreationDate,
+    fileCreationPhotoDate,
+    fileLocation,
     updateRemotePublicMagicMetadata,
     type ParsedMetadataDate,
 } from "@/media/file-metadata";
 import { FileType } from "@/media/file-type";
-import { UnidentifiedFaces } from "@/new/photos/components/PeopleList";
+import {
+    AnnotatedFacePeopleList,
+    UnclusteredFaceList,
+} from "@/new/photos/components/PeopleList";
 import { PhotoDateTimePicker } from "@/new/photos/components/PhotoDateTimePicker";
-import { photoSwipeZIndex } from "@/new/photos/components/PhotoViewer";
+import { fileInfoDrawerZIndex } from "@/new/photos/components/z-index";
 import { tagNumericValue, type RawExifTags } from "@/new/photos/services/exif";
-import { isMLEnabled } from "@/new/photos/services/ml";
+import {
+    AnnotatedFacesForFile,
+    getAnnotatedFacesForFile,
+    isMLEnabled,
+    type AnnotatedFaceID,
+} from "@/new/photos/services/ml";
+import { AppContext } from "@/new/photos/types/context";
 import { EnteFile } from "@/new/photos/types/file";
 import { formattedByteSize } from "@/new/photos/utils/units";
 import CopyButton from "@ente/shared/components/CodeBlock/CopyButton";
 import { FlexWrapper } from "@ente/shared/components/Container";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
 import { getPublicMagicMetadataSync } from "@ente/shared/file-metadata";
 import { formatDate, formatTime } from "@ente/shared/time/format";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -40,15 +52,11 @@ import {
 import { Chip } from "components/Chip";
 import LinkButton from "components/pages/gallery/LinkButton";
 import { t } from "i18next";
-import { AppContext } from "pages/_app";
 import { GalleryContext } from "pages/gallery";
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { Trans } from "react-i18next";
 import { changeFileName, updateExistingFilePubMetadata } from "utils/file";
 import { PublicCollectionGalleryContext } from "utils/publicCollectionGallery";
-import {
-    getMapDisableConfirmationDialog,
-    getMapEnableConfirmationDialog,
-} from "utils/ui";
 import { FileNameEditDialog } from "./FileNameEditDialog";
 import InfoItem from "./InfoItem";
 import MapBox from "./MapBox";
@@ -59,7 +67,7 @@ export interface FileInfoExif {
     parsed: ParsedMetadata | undefined;
 }
 
-interface FileInfoProps {
+export interface FileInfoProps {
     showInfo: boolean;
     handleCloseInfo: () => void;
     closePhotoViewer: () => void;
@@ -71,6 +79,10 @@ interface FileInfoProps {
     fileToCollectionsMap?: Map<number, number[]>;
     collectionNameMap?: Map<number, string>;
     showCollectionChips: boolean;
+    /**
+     * Called when the user selects a person in the file info panel.
+     */
+    onSelectPerson?: ((personID: string) => void) | undefined;
 }
 
 export const FileInfo: React.FC<FileInfoProps> = ({
@@ -85,8 +97,9 @@ export const FileInfo: React.FC<FileInfoProps> = ({
     collectionNameMap,
     showCollectionChips,
     closePhotoViewer,
+    onSelectPerson,
 }) => {
-    const { mapEnabled, updateMapEnabled, setDialogBoxAttributesV2 } =
+    const { mapEnabled, updateMapEnabled, showMiniDialog } =
         useContext(AppContext);
     const galleryContext = useContext(GalleryContext);
     const publicCollectionGalleryContext = useContext(
@@ -95,21 +108,32 @@ export const FileInfo: React.FC<FileInfoProps> = ({
 
     const [exifInfo, setExifInfo] = useState<ExifInfo | undefined>();
     const [openRawExif, setOpenRawExif] = useState(false);
+    const [annotatedFaces, setAnnotatedFaces] = useState<
+        AnnotatedFacesForFile | undefined
+    >();
 
     const location = useMemo(() => {
-        if (file && file.metadata) {
-            if (
-                (file.metadata.latitude || file.metadata.latitude === 0) &&
-                !(file.metadata.longitude === 0 && file.metadata.latitude === 0)
-            ) {
-                return {
-                    latitude: file.metadata.latitude,
-                    longitude: file.metadata.longitude,
-                };
-            }
+        if (file) {
+            const location = fileLocation(file);
+            if (location) return location;
         }
         return exif?.parsed?.location;
     }, [file, exif]);
+
+    useEffect(() => {
+        if (!file) return;
+
+        let didCancel = false;
+
+        void (async () => {
+            const result = await getAnnotatedFacesForFile(file);
+            !didCancel && setAnnotatedFaces(result);
+        })();
+
+        return () => {
+            didCancel = true;
+        };
+    }, [file]);
 
     useEffect(() => {
         setExifInfo(parseExifInfo(exif));
@@ -120,20 +144,26 @@ export const FileInfo: React.FC<FileInfoProps> = ({
     }
 
     const onCollectionChipClick = (collectionID) => {
-        galleryContext.setActiveCollectionID(collectionID);
-        galleryContext.setIsInSearchMode(false);
+        galleryContext.onShowCollection(collectionID);
         closePhotoViewer();
     };
 
     const openEnableMapConfirmationDialog = () =>
-        setDialogBoxAttributesV2(
-            getMapEnableConfirmationDialog(() => updateMapEnabled(true)),
+        showMiniDialog(
+            confirmEnableMapsDialogAttributes(() => updateMapEnabled(true)),
         );
 
     const openDisableMapConfirmationDialog = () =>
-        setDialogBoxAttributesV2(
-            getMapDisableConfirmationDialog(() => updateMapEnabled(false)),
+        showMiniDialog(
+            confirmDisableMapsDialogAttributes(() => updateMapEnabled(false)),
         );
+
+    const handleSelectFace = (annotatedFaceID: AnnotatedFaceID) => {
+        if (onSelectPerson) {
+            onSelectPerson(annotatedFaceID.personID);
+            closePhotoViewer();
+        }
+    };
 
     return (
         <FileInfoSidebar open={showInfo} onClose={handleCloseInfo}>
@@ -176,17 +206,17 @@ export const FileInfo: React.FC<FileInfoProps> = ({
                     <>
                         <InfoItem
                             icon={<LocationOnOutlined />}
-                            title={t("LOCATION")}
+                            title={t("location")}
                             caption={
                                 !mapEnabled ||
                                 publicCollectionGalleryContext.accessedThroughSharedURL ? (
                                     <Link
-                                        href={getOpenStreetMapLink(location)}
+                                        href={openStreetMapLink(location)}
                                         target="_blank"
                                         rel="noopener"
                                         sx={{ fontWeight: "bold" }}
                                     >
-                                        {t("SHOW_ON_MAP")}
+                                        {t("view_on_map")}
                                     </Link>
                                 ) : (
                                     <LinkButton
@@ -199,13 +229,13 @@ export const FileInfo: React.FC<FileInfoProps> = ({
                                             fontWeight: "bold",
                                         }}
                                     >
-                                        {t("DISABLE_MAP")}
+                                        {t("disable_map")}
                                     </LinkButton>
                                 )
                             }
                             customEndButton={
                                 <CopyButton
-                                    code={getOpenStreetMapLink(location)}
+                                    code={openStreetMapLink(location)}
                                     color="secondary"
                                     size="medium"
                                 />
@@ -227,7 +257,7 @@ export const FileInfo: React.FC<FileInfoProps> = ({
                     title={t("DETAILS")}
                     caption={
                         !exif ? (
-                            <EnteSpinner size={12} />
+                            <ActivityIndicator size={12} />
                         ) : !exif.tags ? (
                             t("no_exif")
                         ) : (
@@ -273,10 +303,17 @@ export const FileInfo: React.FC<FileInfoProps> = ({
                     </InfoItem>
                 )}
 
-                {isMLEnabled() && (
+                {isMLEnabled() && annotatedFaces && (
                     <>
-                        {/* <PhotoPeopleList file={file} /> */}
-                        <UnidentifiedFaces enteFile={file} />
+                        <AnnotatedFacePeopleList
+                            enteFile={file}
+                            annotatedFaceIDs={annotatedFaces.annotatedFaceIDs}
+                            onSelectFace={handleSelectFace}
+                        />
+                        <UnclusteredFaceList
+                            enteFile={file}
+                            faceIDs={annotatedFaces.otherFaceIDs}
+                        />
                     </>
                 )}
             </Stack>
@@ -340,10 +377,39 @@ const parseExifInfo = (
     return info;
 };
 
+const confirmEnableMapsDialogAttributes = (
+    onConfirm: () => void,
+): MiniDialogAttributes => ({
+    title: t("enable_maps_confirm"),
+    message: (
+        <Trans
+            i18nKey={"enable_maps_confirm_message"}
+            components={{
+                a: (
+                    <Link
+                        target="_blank"
+                        rel="noopener"
+                        href="https://www.openstreetmap.org/"
+                    />
+                ),
+            }}
+        />
+    ),
+    continue: { text: t("enable"), action: onConfirm },
+});
+
+const confirmDisableMapsDialogAttributes = (
+    onConfirm: () => void,
+): MiniDialogAttributes => ({
+    title: t("disable_maps_confirm"),
+    message: <Trans i18nKey={"disable_maps_confirm_message"} />,
+    continue: { text: t("disable"), color: "critical", action: onConfirm },
+});
+
 const FileInfoSidebar = styled((props: DialogProps) => (
     <EnteDrawer {...props} anchor="right" />
 ))({
-    zIndex: photoSwipeZIndex + 1,
+    zIndex: fileInfoDrawerZIndex,
     "& .MuiPaper-root": {
         padding: 8,
     },
@@ -367,7 +433,7 @@ export const CreationTime: React.FC<CreationTimeProps> = ({
     const closeEditMode = () => setIsInEditMode(false);
 
     const publicMagicMetadata = getPublicMagicMetadataSync(enteFile);
-    const originalDate = getUICreationDate(enteFile, publicMagicMetadata);
+    const originalDate = fileCreationPhotoDate(enteFile, publicMagicMetadata);
 
     const saveEdits = async (pickedTime: ParsedMetadataDate) => {
         try {
@@ -531,11 +597,8 @@ const BasicDeviceCamera: React.FC<{ parsedExif: ExifInfo }> = ({
     );
 };
 
-const getOpenStreetMapLink = (location: {
-    latitude: number;
-    longitude: number;
-}) =>
-    `https://www.openstreetmap.org/?mlat=${location.latitude}&mlon=${location.longitude}#map=15/${location.latitude}/${location.longitude}`;
+const openStreetMapLink = ({ latitude, longitude }: Location) =>
+    `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude}`;
 
 interface RawExifProps {
     open: boolean;
@@ -575,7 +638,8 @@ const RawExif: React.FC<RawExifProps> = ({
                 } else if (
                     tag &&
                     typeof tag == "object" &&
-                    "description" in tag
+                    "description" in tag &&
+                    typeof tag.description == "string"
                 ) {
                     description = tag.description;
                 }

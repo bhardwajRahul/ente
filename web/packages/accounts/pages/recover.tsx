@@ -15,14 +15,13 @@ import {
     decryptAndStoreToken,
     saveKeyInSessionStore,
 } from "@ente/shared/crypto/helpers";
-import InMemoryStore, { MS_KEYS } from "@ente/shared/storage/InMemoryStore";
 import { LS_KEYS, getData, setData } from "@ente/shared/storage/localStorage";
 import { SESSION_KEYS, getKey } from "@ente/shared/storage/sessionStorage";
 import type { KeyAttributes, User } from "@ente/shared/user/types";
 import { t } from "i18next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { appHomeRoute } from "../services/redirect";
+import { appHomeRoute, stashRedirect } from "../services/redirect";
 import type { PageProps } from "../types/page";
 
 const bip39 = require("bip39");
@@ -30,7 +29,7 @@ const bip39 = require("bip39");
 bip39.setDefaultWordlist("english");
 
 const Page: React.FC<PageProps> = ({ appContext }) => {
-    const { showNavBar, setDialogBoxAttributesV2 } = appContext;
+    const { showNavBar, showMiniDialog } = appContext;
 
     const [keyAttributes, setKeyAttributes] = useState<
         KeyAttributes | undefined
@@ -48,7 +47,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
         }
         if (!user?.encryptedToken && !user?.token) {
             sendOtt(user.email);
-            InMemoryStore.set(MS_KEYS.REDIRECT_URL, PAGES.RECOVER);
+            stashRedirect(PAGES.RECOVER);
             router.push(PAGES.VERIFY);
             return;
         }
@@ -99,10 +98,11 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
     };
 
     const showNoRecoveryKeyMessage = () =>
-        setDialogBoxAttributesV2({
-            title: t("SORRY"),
-            close: {},
-            content: t("NO_RECOVERY_KEY_MESSAGE"),
+        showMiniDialog({
+            title: t("sorry"),
+            message: t("no_recovery_key_message"),
+            continue: { color: "secondary" },
+            cancel: false,
         });
 
     return (

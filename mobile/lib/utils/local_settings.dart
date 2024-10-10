@@ -14,6 +14,8 @@ class LocalSettings {
   static const kRateUsShownCount = "rate_us_shown_count";
   static const kEnableMultiplePart = "ls.enable_multiple_part";
   static const kRateUsPromptThreshold = 2;
+  static const shouldLoopVideoKey = "video.should_loop";
+  static const onGuestViewKey = "on_guest_view";
 
   final SharedPreferences _prefs;
 
@@ -82,4 +84,20 @@ class LocalSettings {
     await _prefs.setBool("remoteFetchEnabled", !remoteFetchEnabled);
   }
   //#endregion
+
+  Future<void> setShouldLoopVideo(bool value) async {
+    await _prefs.setBool(shouldLoopVideoKey, value);
+  }
+
+  bool shouldLoopVideo() {
+    return _prefs.getBool(shouldLoopVideoKey) ?? true;
+  }
+
+  Future<void> setOnGuestView(bool value) {
+    return _prefs.setBool(onGuestViewKey, value);
+  }
+
+  bool isOnGuestView() {
+    return _prefs.getBool(onGuestViewKey) ?? false;
+  }
 }

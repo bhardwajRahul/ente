@@ -1,15 +1,21 @@
+import type { Collection } from "@/media/collection";
+import { type SelectionContext } from "@/new/photos/components/gallery";
 import { EnteFile } from "@/new/photos/types/file";
 import type { User } from "@ente/shared/user/types";
-import { CollectionSelectorAttributes } from "components/Collections/CollectionSelector";
 import { FilesDownloadProgressAttributes } from "components/FilesDownloadProgress";
 import { TimeStampListItem } from "components/PhotoList";
-import { Collection } from "types/collection";
 
 export type SelectedState = {
     [k: number]: boolean;
     ownCount: number;
     count: number;
     collectionID: number;
+    /**
+     * The context in which the selection was made. Only set by newer code if
+     * there is an active selection (older code continues to rely on the
+     * {@link collectionID} logic).
+     */
+    context: SelectionContext | undefined;
 };
 export type SetSelectedState = React.Dispatch<
     React.SetStateAction<SelectedState>
@@ -17,9 +23,6 @@ export type SetSelectedState = React.Dispatch<
 export type SetFiles = React.Dispatch<React.SetStateAction<EnteFile[]>>;
 export type SetCollections = React.Dispatch<React.SetStateAction<Collection[]>>;
 export type SetLoading = React.Dispatch<React.SetStateAction<boolean>>;
-export type SetCollectionSelectorAttributes = React.Dispatch<
-    React.SetStateAction<CollectionSelectorAttributes>
->;
 export type SetFilesDownloadProgressAttributes = (
     value:
         | Partial<FilesDownloadProgressAttributes>
@@ -42,9 +45,10 @@ export type MergedSourceURL = {
 export type GalleryContextType = {
     showPlanSelectorModal: () => void;
     setActiveCollectionID: (collectionID: number) => void;
+    /** Newer and almost equivalent alternative to setActiveCollectionID. */
+    onShowCollection: (collectionID: number) => void;
     syncWithRemote: (force?: boolean, silent?: boolean) => Promise<void>;
     setBlockingLoad: (value: boolean) => void;
-    setIsInSearchMode: (value: boolean) => void;
     photoListHeader: TimeStampListItem;
     openExportModal: () => void;
     authenticateUser: (callback: () => void) => void;
@@ -56,11 +60,3 @@ export type GalleryContextType = {
     setSelectedFiles: (value) => void;
     selectedFile: SelectedState;
 };
-
-export enum CollectionSelectorIntent {
-    upload,
-    add,
-    move,
-    restore,
-    unhide,
-}

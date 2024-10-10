@@ -1,4 +1,5 @@
 import { haveWindow } from "@/base/env";
+import { type Location } from "@/base/types";
 import { styled } from "@mui/material";
 import { useEffect, useRef } from "react";
 import { MapButton } from "./MapButton";
@@ -29,7 +30,7 @@ const MapBoxEnableContainer = styled(MapBoxContainer)`
 `;
 
 interface MapBoxProps {
-    location: { latitude: number; longitude: number };
+    location: Location;
     mapEnabled: boolean;
     openUpdateMapConfirmationDialog: () => void;
 }
@@ -70,7 +71,7 @@ const MapBox: React.FC<MapBoxProps> = ({
         <MapBoxEnableContainer>
             <MapButton onClick={openUpdateMapConfirmationDialog}>
                 {" "}
-                {t("ENABLE_MAP")}
+                {t("enable_map")}
             </MapButton>
         </MapBoxEnableContainer>
     );

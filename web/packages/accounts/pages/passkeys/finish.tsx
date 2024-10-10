@@ -1,9 +1,8 @@
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import { fromB64URLSafeNoPaddingString } from "@/base/crypto/libsodium";
 import log from "@/base/log";
 import { nullToUndefined } from "@/utils/transform";
 import { VerticallyCentered } from "@ente/shared/components/Container";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
-import InMemoryStore, { MS_KEYS } from "@ente/shared/storage/InMemoryStore";
 import {
     LS_KEYS,
     getData,
@@ -13,6 +12,7 @@ import {
 import { useRouter } from "next/router";
 import React, { useEffect } from "react";
 import { PAGES } from "../../constants/pages";
+import { unstashRedirect } from "../../services/redirect";
 import type { PageProps } from "../../types/page";
 
 /**
@@ -41,7 +41,7 @@ const Page: React.FC<PageProps> = () => {
 
     return (
         <VerticallyCentered>
-            <EnteSpinner />
+            <ActivityIndicator />
         </VerticallyCentered>
     );
 };
@@ -112,7 +112,5 @@ const saveCredentialsAndNavigateTo = async (
     });
     setData(LS_KEYS.KEY_ATTRIBUTES, keyAttributes);
 
-    const redirectURL = InMemoryStore.get(MS_KEYS.REDIRECT_URL);
-    InMemoryStore.delete(MS_KEYS.REDIRECT_URL);
-    return redirectURL ?? PAGES.CREDENTIALS;
+    return unstashRedirect() ?? PAGES.CREDENTIALS;
 };

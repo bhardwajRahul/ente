@@ -1,7 +1,13 @@
 import { encryptMetadataJSON } from "@/base/crypto";
 import log from "@/base/log";
 import { apiURL } from "@/base/origins";
-import { getLocalFiles, setLocalFiles } from "@/new/photos/services/files";
+import type { Collection } from "@/media/collection";
+import {
+    clearCachedThumbnailsIfChanged,
+    getLocalFiles,
+    setLocalFiles,
+    sortFiles,
+} from "@/new/photos/services/files";
 import {
     EncryptedEnteFile,
     EnteFile,
@@ -14,16 +20,23 @@ import { mergeMetadata } from "@/new/photos/utils/file";
 import { batch } from "@/utils/array";
 import HTTPService from "@ente/shared/network/HTTPService";
 import { getToken } from "@ente/shared/storage/localStorage/helpers";
-import { REQUEST_BATCH_SIZE } from "constants/api";
 import exportService from "services/export";
-import { Collection } from "types/collection";
 import { SetFiles } from "types/gallery";
-import { decryptFile, getLatestVersionFiles, sortFiles } from "utils/file";
+import { decryptFile, getLatestVersionFiles } from "utils/file";
 import {
     getCollectionLastSyncTime,
+    REQUEST_BATCH_SIZE,
     setCollectionLastSyncTime,
 } from "./collectionService";
 
+/**
+ * Fetch all files of the given {@link type}, belonging to the given
+ * {@link collections}, from remote and update our local database.
+ *
+ * In addition to updating the local database, it also calls the provided
+ * {@link setFiles} callback with the latest decrypted files after each batch
+ * the new and/or updated files are received from remote.
+ */
 export const syncFiles = async (
     type: "normal" | "hidden",
     collections: Collection[],
@@ -47,13 +60,13 @@ export const syncFiles = async (
         }
 
         const newFiles = await getFiles(collection, lastSyncTime, setFiles);
+        await clearCachedThumbnailsIfChanged(localFiles, newFiles);
         files = getLatestVersionFiles([...files, ...newFiles]);
         await setLocalFiles(type, files);
         didUpdateFiles = true;
         setCollectionLastSyncTime(collection, collection.updationTime);
     }
     if (didUpdateFiles) exportService.onLocalFilesUpdated();
-    return files;
 };
 
 export const getFiles = async (

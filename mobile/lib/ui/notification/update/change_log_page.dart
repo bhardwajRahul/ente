@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import "package:photos/generated/l10n.dart";
-import "package:photos/l10n/l10n.dart";
 import 'package:photos/services/update_service.dart';
 import 'package:photos/theme/ente_theme.dart';
 import 'package:photos/ui/components/buttons/button_widget.dart';
@@ -11,8 +10,8 @@ import 'package:photos/ui/notification/update/change_log_entry.dart';
 
 class ChangeLogPage extends StatefulWidget {
   const ChangeLogPage({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<ChangeLogPage> createState() => _ChangeLogPageState();
@@ -74,21 +73,6 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
                     const SizedBox(
                       height: 8,
                     ),
-                    // ButtonWidget(
-                    //   buttonType: ButtonType.trailingIconSecondary,
-                    //   buttonSize: ButtonSize.large,
-                    //   labelText: S.of(context).joinDiscord,
-                    //   icon: Icons.discord_outlined,
-                    //   iconColor: enteColorScheme.primary500,
-                    //   onTap: () async {
-                    //     unawaited(
-                    //       launchUrlString(
-                    //         "https://discord.com/invite/z2YVKkycX3",
-                    //         mode: LaunchMode.externalApplication,
-                    //       ),
-                    //     );
-                    //   },
-                    // ),
                     ButtonWidget(
                       buttonType: ButtonType.trailingIconSecondary,
                       buttonSize: ButtonSize.large,
@@ -99,6 +83,7 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
                         await UpdateService.instance.launchReviewUrl();
                       },
                     ),
+                    const SizedBox(height: 8),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -115,16 +100,17 @@ class _ChangeLogPageState extends State<ChangeLogPage> {
     final List<ChangeLogEntry> items = [];
     items.addAll([
       ChangeLogEntry(
-        ctx.l10n.cl_guest_view_title,
-        '${ctx.l10n.cl_guest_view_description}\n\n${ctx.l10n.cl_guest_view_call_to_action}',
+        'Discover',
+        'Looking for photos of your id cards, notes, or even memes? Go to the search tab and check out Discover. Based on our semantic search, it\'s a place to find photos that might be important for you.\n\nOnly available if you have enabled Machine Learning.',
       ),
       ChangeLogEntry(
-        ctx.l10n.cl_panorama_viewer_title,
-        ctx.l10n.cl_panorama_viewer_description,
+        'Backup Status',
+        'We\'ve added a log of all the files that have been uploaded to Ente, including failures and queued.',
       ),
       ChangeLogEntry(
-        ctx.l10n.cl_video_player_title,
-        ctx.l10n.cl_video_player_description,
+        'Magic Search Improvement',
+        'We have improved magic search to become much faster, so you don\'t have to wait to find what you\'re looking for.',
+        isFeature: false,
       ),
     ]);
 

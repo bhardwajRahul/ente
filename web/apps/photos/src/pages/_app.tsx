@@ -1,7 +1,12 @@
-import type { AccountsContextT } from "@/accounts/types/context";
 import { clientPackageName, staticAppTitle } from "@/base/app";
 import { CustomHead } from "@/base/components/Head";
+import { AttributedMiniDialog } from "@/base/components/MiniDialog";
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import { AppNavbar } from "@/base/components/Navbar";
+import {
+    genericErrorDialogAttributes,
+    useAttributedMiniDialog,
+} from "@/base/components/utils/mini-dialog";
 import { setupI18n } from "@/base/i18n";
 import log from "@/base/log";
 import {
@@ -9,20 +14,15 @@ import {
     logUnhandledErrorsAndRejections,
 } from "@/base/log-web";
 import { AppUpdate } from "@/base/types/ipc";
+import { photosDialogZIndex } from "@/new/photos/components/z-index";
 import DownloadManager from "@/new/photos/services/download";
+import { runMigrations } from "@/new/photos/services/migrations";
 import { initML, isMLSupported } from "@/new/photos/services/ml";
-import { ensure } from "@/utils/ensure";
+import { AppContext } from "@/new/photos/types/context";
 import { Overlay } from "@ente/shared/components/Container";
 import DialogBox from "@ente/shared/components/DialogBox";
-import {
-    DialogBoxAttributes,
-    SetDialogBoxAttributes,
-} from "@ente/shared/components/DialogBox/types";
-import DialogBoxV2 from "@ente/shared/components/DialogBoxV2";
-import type { DialogBoxAttributesV2 } from "@ente/shared/components/DialogBoxV2/types";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
+import { DialogBoxAttributes } from "@ente/shared/components/DialogBox/types";
 import { MessageContainer } from "@ente/shared/components/MessageContainer";
-import { PHOTOS_PAGES as PAGES } from "@ente/shared/constants/pages";
 import { useLocalState } from "@ente/shared/hooks/useLocalState";
 import HTTPService from "@ente/shared/network/HTTPService";
 import {
@@ -42,63 +42,25 @@ import ArrowForward from "@mui/icons-material/ArrowForward";
 import { CssBaseline } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import Notification from "components/Notification";
-import { REDIRECTS } from "constants/redirects";
 import { t } from "i18next";
 import isElectron from "is-electron";
 import type { AppProps } from "next/app";
 import { useRouter } from "next/router";
 import "photoswipe/dist/photoswipe.css";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import LoadingBar from "react-top-loading-bar";
 import { resumeExportsIfNeeded } from "services/export";
 import { photosLogout } from "services/logout";
 import {
     getFamilyPortalRedirectURL,
-    getRoadmapRedirectURL,
     updateMapEnabledStatus,
 } from "services/userService";
 import "styles/global.css";
-import {
-    NotificationAttributes,
-    SetNotificationAttributes,
-} from "types/Notification";
+import { NotificationAttributes } from "types/Notification";
 import {
     getUpdateAvailableForDownloadMessage,
     getUpdateReadyToInstallMessage,
 } from "utils/ui";
-
-const redirectMap = new Map([
-    [REDIRECTS.ROADMAP, getRoadmapRedirectURL],
-    [REDIRECTS.FAMILIES, getFamilyPortalRedirectURL],
-]);
-
-/**
- * Properties available via {@link AppContext} to the Photos app's React tree.
- */
-type AppContextT = AccountsContextT & {
-    mapEnabled: boolean;
-    updateMapEnabled: (enabled: boolean) => Promise<void>;
-    startLoading: () => void;
-    finishLoading: () => void;
-    closeMessageDialog: () => void;
-    setDialogMessage: SetDialogBoxAttributes;
-    setNotificationAttributes: SetNotificationAttributes;
-    watchFolderView: boolean;
-    setWatchFolderView: (isOpen: boolean) => void;
-    watchFolderFiles: FileList;
-    setWatchFolderFiles: (files: FileList) => void;
-    themeColor: THEME_COLOR;
-    setThemeColor: (themeColor: THEME_COLOR) => void;
-    somethingWentWrong: () => void;
-    isCFProxyDisabled: boolean;
-    setIsCFProxyDisabled: (disabled: boolean) => void;
-};
-
-/** The React {@link Context} available to all pages. */
-export const AppContext = createContext<AppContextT | undefined>(undefined);
-
-/** Utility hook to reduce amount of boilerplate in account related pages. */
-export const useAppContext = () => ensure(useContext(AppContext));
 
 export default function App({ Component, pageProps }: AppProps) {
     const router = useRouter();
@@ -108,23 +70,19 @@ export default function App({ Component, pageProps }: AppProps) {
         typeof window !== "undefined" && !window.navigator.onLine,
     );
     const [showNavbar, setShowNavBar] = useState(false);
-    const [redirectName, setRedirectName] = useState<string>(null);
     const [mapEnabled, setMapEnabled] = useState(false);
     const isLoadingBarRunning = useRef(false);
     const loadingBar = useRef(null);
     const [dialogMessage, setDialogMessage] = useState<DialogBoxAttributes>();
-    const [dialogBoxAttributeV2, setDialogBoxAttributesV2] = useState<
-        DialogBoxAttributesV2 | undefined
-    >();
-    useState<DialogBoxAttributes>(null);
     const [messageDialogView, setMessageDialogView] = useState(false);
-    const [dialogBoxV2View, setDialogBoxV2View] = useState(false);
     const [watchFolderView, setWatchFolderView] = useState(false);
     const [watchFolderFiles, setWatchFolderFiles] = useState<FileList>(null);
     const [notificationView, setNotificationView] = useState(false);
     const closeNotification = () => setNotificationView(false);
     const [notificationAttributes, setNotificationAttributes] =
         useState<NotificationAttributes>(null);
+
+    const { showMiniDialog, miniDialogProps } = useAttributedMiniDialog();
     const [themeColor, setThemeColor] = useLocalState(
         LS_KEYS.THEME,
         THEME_COLOR.DARK,
@@ -141,6 +99,7 @@ export default function App({ Component, pageProps }: AppProps) {
         logStartupBanner(user?.id);
         HTTPService.setHeaders({ "X-Client-Package": clientPackageName });
         logUnhandledErrorsAndRejections(true);
+        void runMigrations();
         return () => logUnhandledErrorsAndRejections(false);
     }, []);
 
@@ -205,44 +164,23 @@ export default function App({ Component, pageProps }: AppProps) {
     const setUserOffline = () => setOffline(true);
 
     useEffect(() => {
-        const redirectTo = async (redirect) => {
-            if (
-                redirectMap.has(redirect) &&
-                typeof redirectMap.get(redirect) === "function"
-            ) {
-                const redirectAction = redirectMap.get(redirect);
-                window.location.href = await redirectAction();
-            } else {
-                log.error(`invalid redirection ${redirect}`);
-            }
-        };
-
         const query = new URLSearchParams(window.location.search);
-        const redirectName = query.get("redirect");
-        if (redirectName) {
-            const user = getData(LS_KEYS.USER);
-            if (user?.token) {
-                redirectTo(redirectName);
-            } else {
-                setRedirectName(redirectName);
-            }
-        }
+        const needsFamilyRedirect = query.get("redirect") == "families";
+        if (needsFamilyRedirect && getData(LS_KEYS.USER)?.token)
+            redirectToFamilyPortal();
 
         router.events.on("routeChangeStart", (url: string) => {
-            const newPathname = url.split("?")[0] as PAGES;
+            const newPathname = url.split("?")[0];
             if (window.location.pathname !== newPathname) {
                 setLoading(true);
             }
 
-            if (redirectName) {
-                const user = getData(LS_KEYS.USER);
-                if (user?.token) {
-                    redirectTo(redirectName);
+            if (needsFamilyRedirect && getData(LS_KEYS.USER)?.token) {
+                redirectToFamilyPortal();
 
-                    // https://github.com/vercel/next.js/issues/2476#issuecomment-573460710
-                    // eslint-disable-next-line no-throw-literal
-                    throw "Aborting route change, redirection in process....";
-                }
+                // https://github.com/vercel/next.js/issues/2476#issuecomment-573460710
+                // eslint-disable-next-line no-throw-literal
+                throw "Aborting route change, redirection in process....";
             }
         });
 
@@ -257,15 +195,11 @@ export default function App({ Component, pageProps }: AppProps) {
             window.removeEventListener("online", setUserOnline);
             window.removeEventListener("offline", setUserOffline);
         };
-    }, [redirectName]);
+    }, []);
 
     useEffect(() => {
         setMessageDialogView(true);
     }, [dialogMessage]);
-
-    useEffect(() => {
-        setDialogBoxV2View(true);
-    }, [dialogBoxAttributeV2]);
 
     useEffect(() => {
         setNotificationView(true);
@@ -274,13 +208,9 @@ export default function App({ Component, pageProps }: AppProps) {
     const showNavBar = (show: boolean) => setShowNavBar(show);
 
     const updateMapEnabled = async (enabled: boolean) => {
-        try {
-            await updateMapEnabledStatus(enabled);
-            setLocalMapEnabled(enabled);
-            setMapEnabled(enabled);
-        } catch (e) {
-            log.error("Error while updating mapEnabled", e);
-        }
+        await updateMapEnabledStatus(enabled);
+        setLocalMapEnabled(enabled);
+        setMapEnabled(enabled);
     };
 
     const startLoading = () => {
@@ -294,24 +224,35 @@ export default function App({ Component, pageProps }: AppProps) {
         }, 100);
     };
 
-    const closeMessageDialog = () => setMessageDialogView(false);
-    const closeDialogBoxV2 = () => setDialogBoxV2View(false);
+    const closeMessageDialog = useCallback(
+        () => setMessageDialogView(false),
+        [],
+    );
 
-    const somethingWentWrong = () =>
-        setDialogMessage({
-            title: t("ERROR"),
-            close: { variant: "critical" },
-            content: t("UNKNOWN_ERROR"),
-        });
+    // Use `onGenericError` instead.
+    const somethingWentWrong = useCallback(
+        () =>
+            setDialogMessage({
+                title: t("error"),
+                close: { variant: "critical" },
+                content: t("generic_error_retry"),
+            }),
+        [],
+    );
 
-    const logout = () => {
+    const onGenericError = useCallback((e: unknown) => {
+        log.error("Error", e);
+        showMiniDialog(genericErrorDialogAttributes());
+    }, []);
+
+    const logout = useCallback(() => {
         void photosLogout().then(() => router.push("/"));
-    };
+    }, [router]);
 
     const appContext = {
         showNavBar,
-        startLoading,
-        finishLoading,
+        startLoading, // <- changes on each render (TODO Fix)
+        finishLoading, // <- changes on each render
         closeMessageDialog,
         setDialogMessage,
         watchFolderView,
@@ -321,10 +262,11 @@ export default function App({ Component, pageProps }: AppProps) {
         setNotificationAttributes,
         themeColor,
         setThemeColor,
+        showMiniDialog,
         somethingWentWrong,
-        setDialogBoxAttributesV2,
+        onGenericError,
         mapEnabled,
-        updateMapEnabled,
+        updateMapEnabled, // <- changes on each render
         isCFProxyDisabled,
         setIsCFProxyDisabled,
         logout,
@@ -345,17 +287,15 @@ export default function App({ Component, pageProps }: AppProps) {
                 <LoadingBar color="#51cd7c" ref={loadingBar} />
 
                 <DialogBox
-                    sx={{ zIndex: 1600 }}
+                    sx={{ zIndex: photosDialogZIndex }}
                     size="xs"
                     open={messageDialogView}
                     onClose={closeMessageDialog}
                     attributes={dialogMessage}
                 />
-                <DialogBoxV2
-                    sx={{ zIndex: 1600 }}
-                    open={dialogBoxV2View}
-                    onClose={closeDialogBoxV2}
-                    attributes={dialogBoxAttributeV2}
+                <AttributedMiniDialog
+                    sx={{ zIndex: photosDialogZIndex }}
+                    {...miniDialogProps}
                 />
 
                 <Notification
@@ -375,7 +315,7 @@ export default function App({ Component, pageProps }: AppProps) {
                                 backgroundColor: theme.colors.background.base,
                             })}
                         >
-                            <EnteSpinner />
+                            <ActivityIndicator />
                         </Overlay>
                     )}
                     {isI18nReady && (
@@ -386,3 +326,8 @@ export default function App({ Component, pageProps }: AppProps) {
         </>
     );
 }
+
+const redirectToFamilyPortal = () =>
+    void getFamilyPortalRedirectURL().then((url) => {
+        window.location.href = url;
+    });

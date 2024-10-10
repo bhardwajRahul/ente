@@ -22,11 +22,15 @@ import 'package:ente_auth/ui/account/logout_dialog.dart';
 import 'package:ente_auth/ui/code_error_widget.dart';
 import 'package:ente_auth/ui/code_widget.dart';
 import 'package:ente_auth/ui/common/loading_widget.dart';
+import 'package:ente_auth/ui/components/buttons/button_widget.dart';
+import 'package:ente_auth/ui/components/dialog_widget.dart';
+import 'package:ente_auth/ui/components/models/button_type.dart';
 import 'package:ente_auth/ui/home/coach_mark_widget.dart';
 import 'package:ente_auth/ui/home/home_empty_state.dart';
 import 'package:ente_auth/ui/home/speed_dial_label_widget.dart';
 import 'package:ente_auth/ui/scanner_page.dart';
 import 'package:ente_auth/ui/settings_page.dart';
+import 'package:ente_auth/ui/tools/app_lock.dart';
 import 'package:ente_auth/utils/dialog_util.dart';
 import 'package:ente_auth/utils/platform_util.dart';
 import 'package:ente_auth/utils/totp_util.dart';
@@ -55,6 +59,9 @@ class _HomePageState extends State<HomePage> {
   final Logger _logger = Logger("HomePage");
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Used to request focus on the search box when clicked the search icon
+  late FocusNode searchBoxFocusNode;
+
   final TextEditingController _textController = TextEditingController();
   final bool _autoFocusSearch =
       PreferenceService.instance.shouldAutoFocusOnSearchBar();
@@ -67,6 +74,10 @@ class _HomePageState extends State<HomePage> {
   StreamSubscription<TriggerLogoutEvent>? _triggerLogoutEvent;
   StreamSubscription<IconsChangedEvent>? _iconsChangedEvent;
   String selectedTag = "";
+  bool _isTrashOpen = false;
+  bool hasTrashedCodes = false;
+  bool hasNonTrashedCodes = false;
+  bool isCompactMode = false;
 
   @override
   void initState() {
@@ -89,15 +100,34 @@ class _HomePageState extends State<HomePage> {
       setState(() {});
     });
     _showSearchBox = _autoFocusSearch;
+
+    searchBoxFocusNode = FocusNode();
   }
 
   void _loadCodes() {
     CodeStore.instance.getAllCodes().then((codes) {
       _allCodes = codes;
+      hasTrashedCodes = false;
+      hasNonTrashedCodes = false;
+      for (final c in _allCodes ?? []) {
+        if (c.isTrashed) {
+          hasTrashedCodes = true;
+        } else {
+          hasNonTrashedCodes = true;
+        }
+        if (hasNonTrashedCodes && hasTrashedCodes) {
+          break;
+        }
+      }
+      if (!hasTrashedCodes) {
+        _isTrashOpen = false;
+      }
+      if (!hasNonTrashedCodes && hasTrashedCodes) {
+        _isTrashOpen = true;
+      }
 
       CodeDisplayStore.instance.getAllTags(allCodes: _allCodes).then((value) {
         tags = value;
-
         if (mounted) {
           if (!tags.contains(selectedTag)) {
             selectedTag = "";
@@ -124,7 +154,8 @@ class _HomePageState extends State<HomePage> {
       for (final Code codeState in _allCodes!) {
         if (codeState.hasError ||
             selectedTag != "" &&
-                !codeState.display.tags.contains(selectedTag)) {
+                !codeState.display.tags.contains(selectedTag) ||
+            (codeState.isTrashed != _isTrashOpen)) {
           continue;
         }
 
@@ -136,11 +167,19 @@ class _HomePageState extends State<HomePage> {
       }
       _filteredCodes = issuerMatch;
       _filteredCodes.addAll(accountMatch);
+    } else if (_isTrashOpen) {
+      _filteredCodes = _allCodes
+              ?.where(
+                (element) => !element.hasError && element.isTrashed,
+              )
+              .toList() ??
+          [];
     } else {
       _filteredCodes = _allCodes
               ?.where(
                 (element) =>
                     !element.hasError &&
+                    !element.isTrashed &&
                     (selectedTag == "" ||
                         element.display.tags.contains(selectedTag)),
               )
@@ -158,6 +197,9 @@ class _HomePageState extends State<HomePage> {
     _triggerLogoutEvent?.cancel();
     _iconsChangedEvent?.cancel();
     _textController.removeListener(_applyFilteringAndRefresh);
+
+    searchBoxFocusNode.dispose();
+
     super.dispose();
   }
 
@@ -191,12 +233,35 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> navigateToLockScreen() async {
+    final bool shouldShowLockScreen =
+        await Configuration.instance.shouldShowLockScreen();
+    if (shouldShowLockScreen) {
+      await AppLock.of(context)!.showLockScreen();
+    } else {
+      await showDialogWidget(
+        context: context,
+        title: context.l10n.appLockNotEnabled,
+        body: context.l10n.appLockNotEnabledDescription,
+        isDismissible: true,
+        buttons: const [
+          ButtonWidget(
+            buttonType: ButtonType.secondary,
+            labelText: "OK",
+            isInAlert: true,
+          ),
+        ],
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    isCompactMode = PreferenceService.instance.isCompactMode();
 
     return PopScope(
-      onPopInvoked: (_) async {
+      onPopInvokedWithResult: (_, result) async {
         if (_isSettingsOpen) {
           scaffoldKey.currentState!.closeDrawer();
           return;
@@ -241,9 +306,22 @@ class _HomePageState extends State<HomePage> {
                     border: InputBorder.none,
                     focusedBorder: InputBorder.none,
                   ),
+                  focusNode: searchBoxFocusNode,
                 ),
-          centerTitle: true,
+          centerTitle: PlatformUtil.isDesktop() ? false : true,
           actions: <Widget>[
+            PlatformUtil.isDesktop()
+                ? IconButton(
+                    icon: const Icon(Icons.lock),
+                    tooltip: l10n.appLock,
+                    onPressed: () async {
+                      await navigateToLockScreen();
+                    },
+                  )
+                : const SizedBox.shrink(),
+            const SizedBox(
+              width: 4,
+            ),
             IconButton(
               icon: _showSearchBox
                   ? const Icon(Icons.clear)
@@ -258,6 +336,12 @@ class _HomePageState extends State<HomePage> {
                       _searchText = "";
                     } else {
                       _searchText = _textController.text;
+
+                      // Request focus on the search box
+                      // For Windows and macOS only for now. This if statement can be removed if other platforms has been tested.
+                      if (Platform.isWindows || Platform.isMacOS) {
+                        searchBoxFocusNode.requestFocus();
+                      }
                     }
                     _applyFilteringAndRefresh();
                   },
@@ -287,6 +371,8 @@ class _HomePageState extends State<HomePage> {
         final anyCodeHasError =
             _allCodes?.firstWhereOrNull((element) => element.hasError) != null;
         final indexOffset = anyCodeHasError ? 1 : 0;
+        final itemCount = (hasNonTrashedCodes ? tags.length + 1 : 0) +
+            (hasTrashedCodes ? 1 : 0);
 
         final list = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,19 +386,35 @@ class _HomePageState extends State<HomePage> {
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: 8),
-                  itemCount: tags.length + 1,
+                  itemCount: itemCount,
                   itemBuilder: (context, index) {
-                    if (index == 0) {
+                    if (index == 0 && hasNonTrashedCodes) {
                       return TagChip(
-                        label: "All",
-                        state: selectedTag == ""
+                        label: l10n.all,
+                        state: selectedTag == "" && _isTrashOpen == false
                             ? TagChipState.selected
                             : TagChipState.unselected,
                         onTap: () {
                           selectedTag = "";
+                          _isTrashOpen = false;
                           setState(() {});
                           _applyFilteringAndRefresh();
                         },
+                      );
+                    }
+                    if (index == itemCount - 1 && hasTrashedCodes) {
+                      return TagChip(
+                        label: l10n.trash,
+                        state: _isTrashOpen
+                            ? TagChipState.selected
+                            : TagChipState.unselected,
+                        onTap: () {
+                          selectedTag = "";
+                          _isTrashOpen = !_isTrashOpen;
+                          setState(() {});
+                          _applyFilteringAndRefresh();
+                        },
+                        iconData: Icons.delete,
                       );
                     }
                     return TagChip(
@@ -322,6 +424,7 @@ class _HomePageState extends State<HomePage> {
                           ? TagChipState.selected
                           : TagChipState.unselected,
                       onTap: () {
+                        _isTrashOpen = false;
                         if (selectedTag == tags[index - 1]) {
                           selectedTag = "";
                           setState(() {});
@@ -354,9 +457,13 @@ class _HomePageState extends State<HomePage> {
                   }
                   final newIndex = index - indexOffset;
 
+                  final code = _filteredCodes[newIndex];
+
                   return ClipRect(
                     child: CodeWidget(
-                      _filteredCodes[newIndex],
+                      key: ValueKey('${code.hashCode}_$newIndex'),
+                      code,
+                      isCompactMode: isCompactMode,
                     ),
                   );
                 }),
@@ -386,7 +493,9 @@ class _HomePageState extends State<HomePage> {
                         itemBuilder: ((context, index) {
                           final codeState = _filteredCodes[index];
                           return CodeWidget(
+                            key: ValueKey('${codeState.hashCode}_$index'),
                             codeState,
+                            isCompactMode: isCompactMode,
                           );
                         }),
                         itemCount: _filteredCodes.length,
@@ -484,7 +593,7 @@ class _HomePageState extends State<HomePage> {
       foregroundColor: Theme.of(context).colorScheme.fabForegroundColor,
       backgroundColor: Theme.of(context).colorScheme.fabBackgroundColor,
       overlayOpacity: 0.5,
-      overlayColor: Theme.of(context).colorScheme.background,
+      overlayColor: Theme.of(context).colorScheme.surface,
       elevation: 8.0,
       animationCurve: Curves.elasticInOut,
       children: [

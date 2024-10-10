@@ -1229,14 +1229,14 @@ class FilesDB {
       // delete all files with same local ID
       unawaited(
         db.execute(
-          'DELETE FROM $filesTable WHERE $columnLocalID = ?',
+          'DELETE FROM $filesTable WHERE $columnLocalID = ? AND ($columnUploadedFileID IS NULL OR $columnUploadedFileID = -1)',
           [file.localID],
         ),
       );
     } else {
       unawaited(
         db.execute(
-          'DELETE FROM $filesTable WHERE $columnGeneratedID = ?',
+          'DELETE FROM $filesTable WHERE $columnGeneratedID = ? AND ($columnUploadedFileID IS NULL OR $columnUploadedFileID = -1)',
           [file.generatedID],
         ),
       );
@@ -1721,6 +1721,8 @@ class FilesDB {
     final result = await db.getAll(
       'SELECT * FROM $filesTable ORDER BY $columnCreationTime DESC',
     );
+    _logger.info("${result.length} rows in filesDB");
+
     final List<EnteFile> files = await Computer.shared()
         .compute(convertToFilesForIsolate, param: {"result": result});
 

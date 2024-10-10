@@ -1,6 +1,6 @@
 name: ente_auth
 description: ente two-factor authenticator
-version: 3.1.3+323
+version: 4.0.2+402
 publish_to: none
 
 environment:
@@ -16,7 +16,7 @@ dependencies:
   bloc: ^8.1.2
   clipboard: ^0.1.3
   collection: ^1.18.0 # dart
-  confetti: ^0.7.0
+  confetti: ^0.8.0
   connectivity_plus: ^6.0.5
   convert: ^3.1.1
   desktop_webview_window:
@@ -27,6 +27,7 @@ dependencies:
   device_info_plus: ^9.1.1
   dio: ^5.4.0
   dotted_border: ^2.0.0+2
+  dropdown_button2: ^2.3.9
   email_validator: ^3.0.0
   ente_crypto_dart:
     git:
@@ -48,7 +49,7 @@ dependencies:
   flutter_displaymode: ^0.6.0
   flutter_email_sender: ^6.0.2
   flutter_inappwebview: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.1
   flutter_local_authentication:
     git:
       url: https://github.com/eaceto/flutter_local_authentication
@@ -58,7 +59,6 @@ dependencies:
     sdk: flutter
   flutter_native_splash: ^2.2.13
   flutter_secure_storage: ^9.0.0
-  flutter_slidable: ^3.0.1
   flutter_speed_dial: ^7.0.0
   flutter_staggered_grid_view: ^0.7.0
   flutter_svg: ^2.0.5
@@ -117,7 +117,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   json_serializable: ^6.2.0
-  lints: ^4.0.0
+  lints: ^5.0.0
   mocktail: ^1.0.3
 
 # The following section is specific to Flutter.

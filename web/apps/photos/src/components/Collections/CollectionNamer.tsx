@@ -1,4 +1,4 @@
-import DialogBoxV2 from "@ente/shared/components/DialogBoxV2";
+import { TitledMiniDialog } from "@/base/components/MiniDialog";
 import SingleInputForm, {
     type SingleInputFormProps,
 } from "@ente/shared/components/SingleInputForm";
@@ -34,27 +34,25 @@ export default function CollectionNamer({ attributes, ...props }: Props) {
             attributes.callback(albumName);
             props.onHide();
         } catch (e) {
-            setFieldError(t("UNKNOWN_ERROR"));
+            setFieldError(t("generic_error_retry"));
         }
     };
 
     return (
-        <DialogBoxV2
+        <TitledMiniDialog
             open={props.show}
             onClose={props.onHide}
-            attributes={{
-                title: attributes.title,
-            }}
+            title={attributes.title}
         >
             <SingleInputForm
                 callback={onSubmit}
                 fieldType="text"
                 buttonText={attributes.buttonText}
-                placeholder={t("ENTER_ALBUM_NAME")}
+                placeholder={t("enter_album_name")}
                 initialValue={attributes.autoFilledName}
                 submitButtonProps={{ sx: { mt: 1, mb: 2 } }}
                 secondaryButtonAction={props.onHide}
             />
-        </DialogBoxV2>
+        </TitledMiniDialog>
     );
 }

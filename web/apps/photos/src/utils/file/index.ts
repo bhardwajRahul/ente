@@ -24,7 +24,10 @@ import { LS_KEYS, getData } from "@ente/shared/storage/localStorage";
 import type { User } from "@ente/shared/user/types";
 import { downloadUsingAnchor } from "@ente/shared/utils";
 import { t } from "i18next";
-import { moveToHiddenCollection } from "services/collectionService";
+import {
+    addMultipleToFavorites,
+    moveToHiddenCollection,
+} from "services/collectionService";
 import {
     deleteFromTrash,
     trashFiles,
@@ -46,6 +49,7 @@ export enum FILE_OPS_TYPE {
     HIDE,
     TRASH,
     DELETE_PERMANENTLY,
+    SET_FAVORITE,
 }
 
 export async function downloadFile(file: EnteFile) {
@@ -111,21 +115,6 @@ export function getSelectedFiles(
 ): EnteFile[] {
     const selectedFilesIDs = getSelectedFileIds(selected);
     return files.filter((file) => selectedFilesIDs.has(file.id));
-}
-
-export function sortFiles(files: EnteFile[], sortAsc = false) {
-    // sort based on the time of creation time of the file,
-    // for files with same creation time, sort based on the time of last modification
-    const factor = sortAsc ? -1 : 1;
-    return files.sort((a, b) => {
-        if (a.metadata.creationTime === b.metadata.creationTime) {
-            return (
-                factor *
-                (b.metadata.modificationTime - a.metadata.modificationTime)
-            );
-        }
-        return factor * (b.metadata.creationTime - a.metadata.creationTime);
-    });
 }
 
 export async function decryptFile(
@@ -613,6 +602,7 @@ export const handleFileOps = async (
             | ((prev: { files: EnteFile[] }) => { files: EnteFile[] }),
     ) => void,
     setFilesDownloadProgressAttributesCreator: SetFilesDownloadProgressAttributesCreator,
+    refreshFavItemIds: () => void,
 ) => {
     switch (ops) {
         case FILE_OPS_TYPE.TRASH:
@@ -643,6 +633,9 @@ export const handleFileOps = async (
             break;
         case FILE_OPS_TYPE.UNARCHIVE:
             await changeFilesVisibility(files, ItemVisibility.visible);
+            break;
+        case FILE_OPS_TYPE.SET_FAVORITE:
+            await setBulkFavorite(files, refreshFavItemIds);
             break;
     }
 };
@@ -695,4 +688,16 @@ const fixTimeHelper = async (
     }) => void,
 ) => {
     setFixCreationTimeAttributes({ files: selectedFiles });
+};
+
+const setBulkFavorite = async (
+    files: EnteFile[],
+    refreshFavItemIds: () => void,
+) => {
+    try {
+        await addMultipleToFavorites(files);
+        refreshFavItemIds();
+    } catch (e) {
+        log.error("Could not add to favorites", e);
+    }
 };

@@ -14,6 +14,7 @@ import 'package:logging/logging.dart';
 import "package:media_kit/media_kit.dart";
 import 'package:path_provider/path_provider.dart';
 import 'package:photos/app.dart';
+import "package:photos/audio_session_handler.dart";
 import 'package:photos/core/configuration.dart';
 import 'package:photos/core/constants.dart';
 import 'package:photos/core/error-reporting/super_logging.dart';
@@ -73,6 +74,10 @@ const kFGTaskDeathTimeoutInMicroseconds = 5000000;
 void main() async {
   debugRepaintRainbowEnabled = false;
   WidgetsFlutterBinding.ensureInitialized();
+  //For audio to work on vidoes in iOS when in silent mode.
+  if (Platform.isIOS) {
+    unawaited(AudioSessionHandler.setAudioSessionCategory());
+  }
   MediaKit.ensureInitialized();
 
   final savedThemeMode = await AdaptiveTheme.getThemeMode();
@@ -107,7 +112,8 @@ Future<void> _runInForeground(AdaptiveThemeMode? savedThemeMode) async {
         builder: (args) =>
             EnteApp(_runBackgroundTask, _killBGTask, locale, savedThemeMode),
         lockScreen: const LockScreen(),
-        enabled: await Configuration.instance.shouldShowLockScreen(),
+        enabled: await Configuration.instance.shouldShowLockScreen() ||
+            localSettings.isOnGuestView(),
         locale: locale,
         lightTheme: lightThemeData,
         darkTheme: darkThemeData,
@@ -196,7 +202,7 @@ Future<void> _init(bool isBackground, {String via = ''}) async {
     Future.delayed(const Duration(seconds: 15), () {
       if (!initComplete && !isBackground) {
         _logger.severe("Stuck on splash screen for >= 15 seconds");
-        sendLogsForInit(
+        triggerSendLogs(
           "support@ente.io",
           "Stuck on splash screen for >= 15 seconds on ${Platform.operatingSystem}",
           null,

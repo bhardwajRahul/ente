@@ -1,6 +1,13 @@
+import {
+    ItemCard,
+    LargeTileButton,
+    LargeTileTextOverlay,
+} from "@/new/photos/components/Tiles";
+import type { CollectionSummary } from "@/new/photos/services/collection/ui";
 import { FlexWrapper } from "@ente/shared/components/Container";
 import useWindowSize from "@ente/shared/hooks/useWindowSize";
-import { DialogContent } from "@mui/material";
+import { DialogContent, Typography } from "@mui/material";
+import { t } from "i18next";
 import memoize from "memoize-one";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -8,14 +15,13 @@ import {
     ListChildComponentProps,
     areEqual,
 } from "react-window";
-import { CollectionSummary } from "types/collection";
-import AllCollectionCard from "./collectionCard";
 import { AllCollectionMobileBreakpoint } from "./dialog";
 
 const MobileColumns = 2;
 const DesktopColumns = 3;
 
 const CollectionRowItemSize = 154;
+
 const getCollectionRowListHeight = (
     collectionRowList: CollectionSummary[][],
     windowSize: { height: number; width: number },
@@ -62,7 +68,7 @@ const AllCollectionRow = React.memo(
             <div style={style}>
                 <FlexWrapper gap={"4px"} padding={"16px"}>
                     {collectionRow.map((item: any) => (
-                        <AllCollectionCard
+                        <CollectionButton
                             isScrolling={isScrolling}
                             onCollectionClick={onCollectionClick}
                             collectionSummary={item}
@@ -147,3 +153,29 @@ export default function AllCollectionContent({
         </DialogContent>
     );
 }
+
+interface AllCollectionCardProps {
+    collectionSummary: CollectionSummary;
+    onCollectionClick: (collectionID: number) => void;
+    isScrolling?: boolean;
+}
+
+const CollectionButton: React.FC<AllCollectionCardProps> = ({
+    onCollectionClick,
+    collectionSummary,
+    isScrolling,
+}) => (
+    <ItemCard
+        TileComponent={LargeTileButton}
+        coverFile={collectionSummary.coverFile}
+        onClick={() => onCollectionClick(collectionSummary.id)}
+        isScrolling={isScrolling}
+    >
+        <LargeTileTextOverlay>
+            <Typography>{collectionSummary.name}</Typography>
+            <Typography variant="small" color="text.muted">
+                {t("photos_count", { count: collectionSummary.fileCount })}
+            </Typography>
+        </LargeTileTextOverlay>
+    </ItemCard>
+);

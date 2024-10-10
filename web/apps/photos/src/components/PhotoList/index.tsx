@@ -3,16 +3,6 @@ import { formattedByteSize } from "@/new/photos/utils/units";
 import { FlexWrapper } from "@ente/shared/components/Container";
 import { formatDate } from "@ente/shared/time/format";
 import { Box, Checkbox, Link, Typography, styled } from "@mui/material";
-import {
-    DATE_CONTAINER_HEIGHT,
-    GAP_BTW_TILES,
-    IMAGE_CONTAINER_MAX_HEIGHT,
-    IMAGE_CONTAINER_MAX_WIDTH,
-    MIN_COLUMNS,
-    SIZE_AND_COUNT_CONTAINER_HEIGHT,
-    SPACE_BTW_DATES,
-    SPACE_BTW_DATES_TO_IMAGE_CONTAINER_WIDTH_RATIO,
-} from "constants/gallery";
 import { t } from "i18next";
 import memoize from "memoize-one";
 import { GalleryContext } from "pages/gallery";
@@ -25,6 +15,21 @@ import {
 } from "react-window";
 import { handleSelectCreator } from "utils/photoFrame";
 import { PublicCollectionGalleryContext } from "utils/publicCollectionGallery";
+
+import { assertionFailed } from "@/base/assert";
+import {
+    GAP_BTW_TILES,
+    IMAGE_CONTAINER_MAX_HEIGHT,
+    IMAGE_CONTAINER_MAX_WIDTH,
+    MIN_COLUMNS,
+} from "@/new/photos/components/PhotoList";
+import type { PhotoFrameProps } from "components/PhotoFrame";
+
+export const DATE_CONTAINER_HEIGHT = 48;
+export const SIZE_AND_COUNT_CONTAINER_HEIGHT = 72;
+export const SPACE_BTW_DATES = 44;
+
+const SPACE_BTW_DATES_TO_IMAGE_CONTAINER_WIDTH_RATIO = 0.244;
 
 const FOOTER_HEIGHT = 90;
 const ALBUM_FOOTER_HEIGHT = 75;
@@ -183,7 +188,7 @@ const NothingContainer = styled(ListItemContainer)`
     justify-content: center;
 `;
 
-interface Props {
+type Props = Pick<PhotoFrameProps, "mode" | "modePlus"> & {
     height: number;
     width: number;
     displayFiles: EnteFile[];
@@ -194,7 +199,8 @@ interface Props {
         isScrolling?: boolean,
     ) => JSX.Element;
     activeCollectionID: number;
-}
+    activePersonID?: string;
+};
 
 interface ItemData {
     timeStampList: TimeStampListItem[];
@@ -250,10 +256,13 @@ const PhotoListRow = React.memo(
 export function PhotoList({
     height,
     width,
+    mode,
+    modePlus,
     displayFiles,
     showAppDownloadBanner,
     getThumbnail,
     activeCollectionID,
+    activePersonID,
 }: Props) {
     const galleryContext = useContext(GalleryContext);
     const publicCollectionGalleryContext = useContext(
@@ -502,13 +511,14 @@ export function PhotoList({
             itemType: ITEM_TYPE.OTHER,
             item: (
                 <NothingContainer span={columns}>
-                    <div>{t("NOTHING_HERE")}</div>
+                    <div>{t("nothing_here")}</div>
                 </NothingContainer>
             ),
             id: "empty-list-banner",
             height: height - 48,
         };
     };
+
     const getVacuumItem = (timeStampList) => {
         let footerHeight;
         if (publicCollectionGalleryContext.accessedThroughSharedURL) {
@@ -544,7 +554,7 @@ export function PhotoList({
                 <FooterContainer span={columns}>
                     <Typography variant="small">
                         <Trans
-                            i18nKey={"INSTALL_MOBILE_APP"}
+                            i18nKey={"install_mobile_app"}
                             components={{
                                 a: (
                                     <Link
@@ -618,6 +628,7 @@ export function PhotoList({
             ),
         };
     };
+
     /**
      * Checks and merge multiple dates into a single row.
      *
@@ -763,7 +774,9 @@ export function PhotoList({
 
     const handleSelect = handleSelectCreator(
         galleryContext.setSelectedFiles,
+        mode,
         activeCollectionID,
+        activePersonID,
     );
 
     const onChangeSelectAllCheckBox = (date: string) => {
@@ -878,9 +891,25 @@ export function PhotoList({
         renderListItem,
     );
 
+    // The old, mode unaware, behaviour.
+    let key = `${activeCollectionID}`;
+    if (modePlus) {
+        // If the new experimental modePlus prop is provided, use it to derive a
+        // mode specific key.
+        if (modePlus == "search") {
+            key = "search";
+        } else if (modePlus == "people") {
+            if (!activePersonID) {
+                assertionFailed();
+            } else {
+                key = activePersonID;
+            }
+        }
+    }
+
     return (
         <List
-            key={`${activeCollectionID}`}
+            key={key}
             itemData={itemData}
             ref={listRef}
             itemSize={getItemSize(timeStampList)}

@@ -1,10 +1,11 @@
 import { Login } from "@/accounts/components/Login";
 import { SignUp } from "@/accounts/components/SignUp";
+import { EnteLogo } from "@/base/components/EnteLogo";
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import log from "@/base/log";
 import { albumsAppOrigin, customAPIHost } from "@/base/origins";
 import { DevSettings } from "@/new/photos/components/DevSettings";
-import { EnteLogo } from "@ente/shared/components/EnteLogo";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
+import { useAppContext } from "@/new/photos/types/context";
 import { PHOTOS_PAGES as PAGES } from "@ente/shared/constants/pages";
 import { saveKeyInSessionStore } from "@ente/shared/crypto/helpers";
 import localForage from "@ente/shared/storage/localForage";
@@ -24,7 +25,6 @@ import { CarouselProvider, DotGroup, Slide, Slider } from "pure-react-carousel";
 import "pure-react-carousel/dist/react-carousel.es.css";
 import { useCallback, useEffect, useState } from "react";
 import { Trans } from "react-i18next";
-import { useAppContext } from "./_app";
 
 export default function LandingPage() {
     const { showNavBar, setDialogMessage } = useAppContext();
@@ -120,7 +120,7 @@ export default function LandingPage() {
     return (
         <TappableContainer onMaybeChangeHost={refreshHost}>
             {loading ? (
-                <EnteSpinner />
+                <ActivityIndicator />
             ) : (
                 <>
                     <SlideContainer>
@@ -249,7 +249,8 @@ const SlideContainer = styled("div")`
 `;
 
 const Logo_ = styled("div")`
-    margin-block-end: 64px;
+    margin-block-start: 32px;
+    margin-block-end: 48px;
 `;
 
 const MobileBox = styled("div")`
@@ -318,9 +319,9 @@ const Slideshow: React.FC = () => {
 /images/onboarding-lock/3x.png 3x"
                     />
                     <FeatureText>
-                        <Trans i18nKey={"HERO_SLIDE_1_TITLE"} />
+                        <Trans i18nKey={"intro_slide_1_title"} />
                     </FeatureText>
-                    <TextContainer>{t("HERO_SLIDE_1")}</TextContainer>
+                    <TextContainer>{t("intro_slide_1")}</TextContainer>
                 </Slide>
                 <Slide index={1}>
                     <SlideContents>
@@ -330,9 +331,9 @@ const Slideshow: React.FC = () => {
                 /images/onboarding-safe/3x.png 3x"
                         />
                         <FeatureText>
-                            <Trans i18nKey={"HERO_SLIDE_2_TITLE"} />
+                            <Trans i18nKey={"intro_slide_2_title"} />
                         </FeatureText>
-                        <TextContainer>{t("HERO_SLIDE_2")}</TextContainer>
+                        <TextContainer>{t("intro_slide_2")}</TextContainer>
                     </SlideContents>
                 </Slide>
                 <Slide index={2}>
@@ -343,9 +344,9 @@ const Slideshow: React.FC = () => {
                 /images/onboarding-sync/3x.png 3x"
                         />
                         <FeatureText>
-                            <Trans i18nKey={"HERO_SLIDE_3_TITLE"} />
+                            <Trans i18nKey={"intro_slide_3_title"} />
                         </FeatureText>
-                        <TextContainer>{t("HERO_SLIDE_3")}</TextContainer>
+                        <TextContainer>{t("intro_slide_3")}</TextContainer>
                     </SlideContents>
                 </Slide>
             </Slider>

@@ -121,13 +121,7 @@ class RemoteSyncService {
         await syncDeviceCollectionFilesForUpload();
       }
       await _pullDiff();
-      // sync trash but consume error during initial launch.
-      // this is to ensure that we don't pause upload due to any error during
-      // the trash sync. Impact: We may end up re-uploading a file which was
-      // recently trashed.
-      await TrashSyncService.instance
-          .syncTrash()
-          .onError((e, s) => _logger.severe('trash sync failed', e, s));
+      await TrashSyncService.instance.syncTrash();
       if (!hasSyncedBefore) {
         await _prefs.setBool(_isFirstRemoteSyncDone, true);
         await syncDeviceCollectionFilesForUpload();
@@ -581,7 +575,9 @@ class RemoteSyncService {
     _ignoredUploads = 0;
     final int toBeUploaded = filesToBeUploaded.length + updatedFileIDs.length;
     if (toBeUploaded > 0) {
-      Bus.instance.fire(SyncStatusUpdate(SyncStatus.preparingForUpload));
+      Bus.instance.fire(
+        SyncStatusUpdate(SyncStatus.preparingForUpload, total: toBeUploaded),
+      );
       await _uploader.verifyMediaLocationAccess();
       await _uploader.checkNetworkForUpload();
       // verify if files upload is allowed based on their subscription plan and

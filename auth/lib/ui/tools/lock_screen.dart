@@ -33,6 +33,9 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
   int remainingTimeInSeconds = 0;
   final _lockscreenSetting = LockScreenSettings.instance;
   late Brightness _platformBrightness;
+  final bool hasOptedForOfflineMode =
+      Configuration.instance.hasOptedForOfflineMode();
+
   @override
   void initState() {
     _logger.info("initiatingState");
@@ -40,10 +43,6 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
     invalidAttemptCount = _lockscreenSetting.getInvalidAttemptCount();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if (isNonMobileIOSDevice()) {
-        _logger.info('ignore init for non mobile iOS device');
-        return;
-      }
       _showLockScreen(source: "postFrameInit");
     });
     _platformBrightness =
@@ -57,13 +56,15 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.logout_outlined),
-          color: Theme.of(context).iconTheme.color,
-          onPressed: () {
-            _onLogoutTapped(context);
-          },
-        ),
+        leading: hasOptedForOfflineMode
+            ? const SizedBox.shrink()
+            : IconButton(
+                icon: const Icon(Icons.logout_outlined),
+                color: Theme.of(context).iconTheme.color,
+                onPressed: () {
+                  _onLogoutTapped(context);
+                },
+              ),
       ),
       body: GestureDetector(
         onTap: () {
@@ -190,14 +191,6 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
     );
   }
 
-  bool isNonMobileIOSDevice() {
-    if (Platform.isAndroid) {
-      return false;
-    }
-    var shortestSide = MediaQuery.of(context).size.shortestSide;
-    return shortestSide > 600 ? true : false;
-  }
-
   void _onLogoutTapped(BuildContext context) {
     showChoiceActionSheet(
       context,
@@ -206,6 +199,8 @@ class _LockScreenState extends State<LockScreen> with WidgetsBindingObserver {
       isCritical: true,
       firstButtonOnTap: () async {
         await UserService.instance.logout(context);
+        // To start the app afresh, resetting all state.
+        Process.killPid(pid, ProcessSignal.sigkill);
       },
     );
   }

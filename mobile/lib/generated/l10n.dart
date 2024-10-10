@@ -170,10 +170,10 @@ class S {
     );
   }
 
-  /// `Yes, I want to permanently delete this account and all its data.`
+  /// `Yes, I want to permanently delete this account and its data across all apps.`
   String get confirmDeletePrompt {
     return Intl.message(
-      'Yes, I want to permanently delete this account and all its data.',
+      'Yes, I want to permanently delete this account and its data across all apps.',
       name: 'confirmDeletePrompt',
       desc: '',
       args: [],
@@ -2452,10 +2452,10 @@ class S {
     );
   }
 
-  /// `Looks like your subscription has expired. Please subscribe to enable sharing.`
+  /// `You need an active paid subscription to enable sharing.`
   String get subscribeToEnableSharing {
     return Intl.message(
-      'Looks like your subscription has expired. Please subscribe to enable sharing.',
+      'You need an active paid subscription to enable sharing.',
       name: 'subscribeToEnableSharing',
       desc: '',
       args: [],
@@ -2976,6 +2976,167 @@ class S {
     );
   }
 
+  /// `Discover`
+  String get discover {
+    return Intl.message(
+      'Discover',
+      name: 'discover',
+      desc:
+          'The text to display for the discover section under which we show receipts, screenshots, sunsets, greenery, etc.',
+      args: [],
+    );
+  }
+
+  /// `Identity`
+  String get discover_identity {
+    return Intl.message(
+      'Identity',
+      name: 'discover_identity',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Screenshots`
+  String get discover_screenshots {
+    return Intl.message(
+      'Screenshots',
+      name: 'discover_screenshots',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Receipts`
+  String get discover_receipts {
+    return Intl.message(
+      'Receipts',
+      name: 'discover_receipts',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Notes`
+  String get discover_notes {
+    return Intl.message(
+      'Notes',
+      name: 'discover_notes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Memes`
+  String get discover_memes {
+    return Intl.message(
+      'Memes',
+      name: 'discover_memes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visiting Cards`
+  String get discover_visiting_cards {
+    return Intl.message(
+      'Visiting Cards',
+      name: 'discover_visiting_cards',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Babies`
+  String get discover_babies {
+    return Intl.message(
+      'Babies',
+      name: 'discover_babies',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pets`
+  String get discover_pets {
+    return Intl.message(
+      'Pets',
+      name: 'discover_pets',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Selfies`
+  String get discover_selfies {
+    return Intl.message(
+      'Selfies',
+      name: 'discover_selfies',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Wallpapers`
+  String get discover_wallpapers {
+    return Intl.message(
+      'Wallpapers',
+      name: 'discover_wallpapers',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Food`
+  String get discover_food {
+    return Intl.message(
+      'Food',
+      name: 'discover_food',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Celebrations`
+  String get discover_celebrations {
+    return Intl.message(
+      'Celebrations',
+      name: 'discover_celebrations',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sunset`
+  String get discover_sunset {
+    return Intl.message(
+      'Sunset',
+      name: 'discover_sunset',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hills`
+  String get discover_hills {
+    return Intl.message(
+      'Hills',
+      name: 'discover_hills',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Greenery`
+  String get discover_greenery {
+    return Intl.message(
+      'Greenery',
+      name: 'discover_greenery',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please note that machine learning will result in a higher bandwidth and battery usage until all items are indexed. Consider using the desktop app for faster indexing, all results will be synced automatically.`
   String get mlIndexingDescription {
     return Intl.message(
@@ -3167,6 +3328,26 @@ class S {
     return Intl.message(
       'Backup settings',
       name: 'backupSettings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Backup status`
+  String get backupStatus {
+    return Intl.message(
+      'Backup status',
+      name: 'backupStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Items that have been backed up will show up here`
+  String get backupStatusDescription {
+    return Intl.message(
+      'Items that have been backed up will show up here',
+      name: 'backupStatusDescription',
       desc: '',
       args: [],
     );
@@ -6549,6 +6730,26 @@ class S {
     );
   }
 
+  /// `Preserving {count} memories...`
+  String uploadingMultipleMemories(Object count) {
+    return Intl.message(
+      'Preserving $count memories...',
+      name: 'uploadingMultipleMemories',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Preserving 1 memory...`
+  String get uploadingSingleMemory {
+    return Intl.message(
+      'Preserving 1 memory...',
+      name: 'uploadingSingleMemory',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Archiving...`
   String get archiving {
     return Intl.message(
@@ -9395,71 +9596,31 @@ class S {
     );
   }
 
-  /// `Guest View`
-  String get cl_guest_view_title {
+  /// `Name the album`
+  String get nameTheAlbum {
     return Intl.message(
-      'Guest View',
-      name: 'cl_guest_view_title',
+      'Name the album',
+      name: 'nameTheAlbum',
       desc: '',
       args: [],
     );
   }
 
-  /// `Handing over your phone to show photos to a friend? Don't worry about them swiping too far. Guest view will lock them into the photos you select.`
-  String get cl_guest_view_description {
+  /// `Create a link where your friends can upload photos in original quality.`
+  String get collectPhotosDescription {
     return Intl.message(
-      'Handing over your phone to show photos to a friend? Don\'t worry about them swiping too far. Guest view will lock them into the photos you select.',
-      name: 'cl_guest_view_description',
+      'Create a link where your friends can upload photos in original quality.',
+      name: 'collectPhotosDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Select photos and check out "Guest view".`
-  String get cl_guest_view_call_to_action {
+  /// `Collect`
+  String get collect {
     return Intl.message(
-      'Select photos and check out "Guest view".',
-      name: 'cl_guest_view_call_to_action',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Panorama Viewer`
-  String get cl_panorama_viewer_title {
-    return Intl.message(
-      'Panorama Viewer',
-      name: 'cl_panorama_viewer_title',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `We've added support for viewing panorama photos with 360 degree views. The experience is immersive with motion-based navigation!`
-  String get cl_panorama_viewer_description {
-    return Intl.message(
-      'We\'ve added support for viewing panorama photos with 360 degree views. The experience is immersive with motion-based navigation!',
-      name: 'cl_panorama_viewer_description',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Video Player`
-  String get cl_video_player_title {
-    return Intl.message(
-      'Video Player',
-      name: 'cl_video_player_title',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Introducing a fresh new video player, with better playback controls and support for HDR videos.`
-  String get cl_video_player_description {
-    return Intl.message(
-      'Introducing a fresh new video player, with better playback controls and support for HDR videos.',
-      name: 'cl_video_player_description',
+      'Collect',
+      name: 'collect',
       desc: '',
       args: [],
     );
@@ -9494,6 +9655,96 @@ class S {
       args: [],
     );
   }
+
+  /// `Loop video on`
+  String get loopVideoOn {
+    return Intl.message(
+      'Loop video on',
+      name: 'loopVideoOn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loop video off`
+  String get loopVideoOff {
+    return Intl.message(
+      'Loop video off',
+      name: 'loopVideoOff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Looks like something went wrong since local photos sync is taking more time than expected. Please reach out to our support team`
+  String get localSyncErrorMessage {
+    return Intl.message(
+      'Looks like something went wrong since local photos sync is taking more time than expected. Please reach out to our support team',
+      name: 'localSyncErrorMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show person`
+  String get showPerson {
+    return Intl.message(
+      'Show person',
+      name: 'showPerson',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sort`
+  String get sort {
+    return Intl.message(
+      'Sort',
+      name: 'sort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Most recent`
+  String get mostRecent {
+    return Intl.message(
+      'Most recent',
+      name: 'mostRecent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Most relevant`
+  String get mostRelevant {
+    return Intl.message(
+      'Most relevant',
+      name: 'mostRelevant',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading your photos...`
+  String get loadingYourPhotos {
+    return Intl.message(
+      'Loading your photos...',
+      name: 'loadingYourPhotos',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Processing {folderName}...`
+  String processingImport(Object folderName) {
+    return Intl.message(
+      'Processing $folderName...',
+      name: 'processingImport',
+      desc: '',
+      args: [folderName],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<S> {
@@ -9502,17 +9753,35 @@ class AppLocalizationDelegate extends LocalizationsDelegate<S> {
   List<Locale> get supportedLocales {
     return const <Locale>[
       Locale.fromSubtags(languageCode: 'en'),
+      Locale.fromSubtags(languageCode: 'ar'),
+      Locale.fromSubtags(languageCode: 'bg'),
+      Locale.fromSubtags(languageCode: 'ca'),
       Locale.fromSubtags(languageCode: 'cs'),
+      Locale.fromSubtags(languageCode: 'da'),
       Locale.fromSubtags(languageCode: 'de'),
+      Locale.fromSubtags(languageCode: 'el'),
       Locale.fromSubtags(languageCode: 'es'),
+      Locale.fromSubtags(languageCode: 'et'),
+      Locale.fromSubtags(languageCode: 'fa'),
       Locale.fromSubtags(languageCode: 'fr'),
+      Locale.fromSubtags(languageCode: 'gu'),
+      Locale.fromSubtags(languageCode: 'he'),
+      Locale.fromSubtags(languageCode: 'hi'),
+      Locale.fromSubtags(languageCode: 'id'),
       Locale.fromSubtags(languageCode: 'it'),
+      Locale.fromSubtags(languageCode: 'ja'),
+      Locale.fromSubtags(languageCode: 'km'),
       Locale.fromSubtags(languageCode: 'ko'),
       Locale.fromSubtags(languageCode: 'nl'),
       Locale.fromSubtags(languageCode: 'no'),
       Locale.fromSubtags(languageCode: 'pl'),
       Locale.fromSubtags(languageCode: 'pt'),
       Locale.fromSubtags(languageCode: 'ru'),
+      Locale.fromSubtags(languageCode: 'sv'),
+      Locale.fromSubtags(languageCode: 'ta'),
+      Locale.fromSubtags(languageCode: 'te'),
+      Locale.fromSubtags(languageCode: 'th'),
+      Locale.fromSubtags(languageCode: 'ti'),
       Locale.fromSubtags(languageCode: 'tr'),
       Locale.fromSubtags(languageCode: 'zh'),
     ];

@@ -1,23 +1,27 @@
 import log from "@/base/log";
 import { FileType } from "@/media/file-type";
+import {
+    GAP_BTW_TILES,
+    IMAGE_CONTAINER_MAX_WIDTH,
+} from "@/new/photos/components/PhotoList";
+import {
+    LoadingThumbnail,
+    StaticThumbnail,
+} from "@/new/photos/components/PlaceholderThumbnails";
 import DownloadManager from "@/new/photos/services/download";
 import { EnteFile } from "@/new/photos/types/file";
 import { Overlay } from "@ente/shared/components/Container";
 import { CustomError } from "@ente/shared/error";
 import useLongPress from "@ente/shared/hooks/useLongPress";
 import AlbumOutlined from "@mui/icons-material/AlbumOutlined";
+import Favorite from "@mui/icons-material/FavoriteRounded";
 import PlayCircleOutlineOutlinedIcon from "@mui/icons-material/PlayCircleOutlineOutlined";
 import { Tooltip, styled } from "@mui/material";
-import {
-    LoadingThumbnail,
-    StaticThumbnail,
-} from "components/PlaceholderThumbnails";
-import { TRASH_SECTION } from "constants/collection";
-import { GAP_BTW_TILES, IMAGE_CONTAINER_MAX_WIDTH } from "constants/gallery";
 import i18n from "i18next";
 import { DeduplicateContext } from "pages/deduplicate";
 import { GalleryContext } from "pages/gallery";
 import React, { useContext, useEffect, useRef, useState } from "react";
+import { TRASH_SECTION } from "utils/collection";
 import { shouldShowAvatar } from "utils/file";
 import Avatar from "./Avatar";
 
@@ -35,6 +39,7 @@ interface IProps {
     isInsSelectRange: boolean;
     activeCollectionID: number;
     showPlaceholder: boolean;
+    isFav: boolean;
 }
 
 const Check = styled("input")<{ $active: boolean }>`
@@ -42,7 +47,6 @@ const Check = styled("input")<{ $active: boolean }>`
     position: absolute;
     z-index: 10;
     left: 0;
-    opacity: 0;
     outline: none;
     cursor: pointer;
     @media (pointer: coarse) {
@@ -90,8 +94,10 @@ const Check = styled("input")<{ $active: boolean }>`
         border-right: 2px solid #ddd;
         border-bottom: 2px solid #ddd;
     }
-    ${(props) => props.$active && "opacity: 0.5 "};
+    visibility: hidden;
+    ${(props) => props.$active && "visibility: visible; opacity: 0.5;"};
     &:checked {
+        visibility: visible;
         opacity: 1 !important;
     }
 `;
@@ -115,6 +121,15 @@ export const AvatarOverlay = styled(Overlay)`
     align-items: flex-start;
     padding-right: 5px;
     padding-top: 5px;
+`;
+
+export const FavOverlay = styled(Overlay)`
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-end;
+    padding-left: 5px;
+    padding-bottom: 5px;
+    opacity: 0.9;
 `;
 
 export const InSelectRangeOverLay = styled("div")<{ $active: boolean }>`
@@ -207,6 +222,7 @@ const Cont = styled("div")<{ disabled: boolean }>`
 
     &:hover {
         input[type="checkbox"] {
+            visibility: visible;
             opacity: 0.5;
         }
 
@@ -345,6 +361,11 @@ export default function PreviewCard(props: IProps) {
                 <AvatarOverlay>
                     <Avatar file={file} />
                 </AvatarOverlay>
+            )}
+            {props.isFav && (
+                <FavOverlay>
+                    <Favorite />
+                </FavOverlay>
             )}
 
             <HoverOverlay

@@ -154,7 +154,7 @@ downgrade to the 50 GB yearly plan, then
 
 -   This credited amount will be discounted from your next invoice, which will
     be due in half a year.
-    
+
 The same applies to monthly plans.
 
 If you prefer to have this credit refunded to your original payment method,
@@ -176,3 +176,7 @@ you can gain more value out of a single subscription.
 ## Is there a forever-free plan?
 
 Yes, we offer 5 GB of storage for free.
+
+## What are the limitations of the free plan?
+
+You cannot share albums, or setup a family while you are on a free plan.

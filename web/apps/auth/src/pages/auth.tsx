@@ -1,29 +1,29 @@
+import { sessionExpiredDialogAttributes } from "@/accounts/components/LoginComponents";
+import { stashRedirect } from "@/accounts/services/redirect";
+import { EnteLogo } from "@/base/components/EnteLogo";
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import { NavbarBase } from "@/base/components/Navbar";
 import { ensure } from "@/utils/ensure";
 import {
     HorizontalFlex,
     VerticallyCentered,
 } from "@ente/shared/components/Container";
-import { EnteLogo } from "@ente/shared/components/EnteLogo";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
-import { sessionExpiredDialogAttributes } from "@ente/shared/components/LoginComponents";
 import OverflowMenu from "@ente/shared/components/OverflowMenu/menu";
 import { OverflowMenuOption } from "@ente/shared/components/OverflowMenu/option";
 import { AUTH_PAGES as PAGES } from "@ente/shared/constants/pages";
 import { ApiError, CustomError } from "@ente/shared/error";
-import InMemoryStore, { MS_KEYS } from "@ente/shared/storage/InMemoryStore";
 import LogoutOutlined from "@mui/icons-material/LogoutOutlined";
 import MoreHoriz from "@mui/icons-material/MoreHoriz";
 import { Button, ButtonBase, Snackbar, TextField, styled } from "@mui/material";
 import { t } from "i18next";
 import { useRouter } from "next/router";
-import { AppContext } from "pages/_app";
 import React, { useContext, useEffect, useState } from "react";
 import { generateOTPs, type Code } from "services/code";
 import { getAuthCodes } from "services/remote";
+import { AppContext } from "./_app";
 
 const Page: React.FC = () => {
-    const { logout, showNavBar, setDialogBoxAttributesV2 } = ensure(
+    const { logout, showNavBar, showMiniDialog } = ensure(
         useContext(AppContext),
     );
     const router = useRouter();
@@ -32,7 +32,7 @@ const Page: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
 
     const showSessionExpiredDialog = () =>
-        setDialogBoxAttributesV2(sessionExpiredDialogAttributes(logout));
+        showMiniDialog(sessionExpiredDialogAttributes(logout));
 
     useEffect(() => {
         const fetchCodes = async () => {
@@ -43,7 +43,7 @@ const Page: React.FC = () => {
                     e instanceof Error &&
                     e.message == CustomError.KEY_MISSING
                 ) {
-                    InMemoryStore.set(MS_KEYS.REDIRECT_URL, PAGES.AUTH);
+                    stashRedirect(PAGES.AUTH);
                     router.push("/");
                 } else if (e instanceof ApiError && e.httpStatusCode == 401) {
                     // We get back a 401 Unauthorized if the token is not valid.
@@ -68,7 +68,7 @@ const Page: React.FC = () => {
     if (!hasFetched) {
         return (
             <VerticallyCentered>
-                <EnteSpinner />
+                <ActivityIndicator />
             </VerticallyCentered>
         );
     }
@@ -93,7 +93,7 @@ const Page: React.FC = () => {
                     <TextField
                         id="search"
                         name="search"
-                        label={t("SEARCH")}
+                        label={t("search")}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         variant="filled"
                         style={{ width: "350px" }}
@@ -121,7 +121,7 @@ const Page: React.FC = () => {
                             }}
                         >
                             {searchTerm.length > 0 ? (
-                                <p>{t("NO_RESULTS")}</p>
+                                <p>{t("no_results")}</p>
                             ) : (
                                 <></>
                             )}
@@ -158,7 +158,7 @@ const AuthNavbar: React.FC = () => {
                         startIcon={<LogoutOutlined />}
                         onClick={logout}
                     >
-                        {t("LOGOUT")}
+                        {t("logout")}
                     </OverflowMenuOption>
                 </OverflowMenu>
             </HorizontalFlex>
@@ -407,7 +407,7 @@ const Footer: React.FC = () => {
                 href="https://github.com/ente-io/ente/tree/main/auth#-download"
                 download
             >
-                <Button color="accent">{t("DOWNLOAD")}</Button>
+                <Button color="accent">{t("download")}</Button>
             </a>
         </Footer_>
     );

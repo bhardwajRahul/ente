@@ -1,17 +1,12 @@
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import { sharedCryptoWorker } from "@/base/crypto";
 import type { B64EncryptionResult } from "@/base/crypto/libsodium";
+import { clearLocalStorage } from "@/base/local-storage";
 import log from "@/base/log";
 import { ensure } from "@/utils/ensure";
 import { VerticallyCentered } from "@ente/shared/components/Container";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
 import FormPaper from "@ente/shared/components/Form/FormPaper";
 import LinkButton from "@ente/shared/components/LinkButton";
-import {
-    LoginFlowFormFooter,
-    PasswordHeader,
-    VerifyingPasskey,
-    sessionExpiredDialogAttributes,
-} from "@ente/shared/components/LoginComponents";
 import VerifyMasterPasswordForm, {
     type VerifyMasterPasswordFormProps,
 } from "@ente/shared/components/VerifyMasterPasswordForm";
@@ -22,10 +17,8 @@ import {
     saveKeyInSessionStore,
 } from "@ente/shared/crypto/helpers";
 import { CustomError } from "@ente/shared/error";
-import InMemoryStore, { MS_KEYS } from "@ente/shared/storage/InMemoryStore";
 import {
     LS_KEYS,
-    clearData,
     getData,
     setData,
     setLSUser,
@@ -47,12 +40,22 @@ import { t } from "i18next";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 import { getSRPAttributes } from "../api/srp";
+import {
+    LoginFlowFormFooter,
+    PasswordHeader,
+    VerifyingPasskey,
+    sessionExpiredDialogAttributes,
+} from "../components/LoginComponents";
 import { PAGES } from "../constants/pages";
 import {
     openPasskeyVerificationURL,
     passkeyVerificationRedirectURL,
 } from "../services/passkey";
-import { appHomeRoute } from "../services/redirect";
+import {
+    appHomeRoute,
+    stashRedirect,
+    unstashRedirect,
+} from "../services/redirect";
 import { checkSessionValidity } from "../services/session";
 import {
     configureSRP,
@@ -63,7 +66,7 @@ import type { PageProps } from "../types/page";
 import type { SRPAttributes } from "../types/srp";
 
 const Page: React.FC<PageProps> = ({ appContext }) => {
-    const { logout, showNavBar, setDialogBoxAttributesV2 } = appContext;
+    const { logout, showNavBar, showMiniDialog } = appContext;
 
     const [srpAttributes, setSrpAttributes] = useState<SRPAttributes>();
     const [keyAttributes, setKeyAttributes] = useState<KeyAttributes>();
@@ -79,7 +82,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
 
     const validateSession = useCallback(async () => {
         const showSessionExpiredDialog = () =>
-            setDialogBoxAttributesV2(sessionExpiredDialogAttributes(logout));
+            showMiniDialog(sessionExpiredDialogAttributes(logout));
 
         try {
             const session = await checkSessionValidity();
@@ -111,7 +114,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
             // potentially transient issues.
             log.warn("Ignoring error when determining session validity", e);
         }
-    }, [setDialogBoxAttributesV2, logout]);
+    }, [showMiniDialog, logout]);
 
     useEffect(() => {
         const main = async () => {
@@ -177,7 +180,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
                     (!user?.token && !user?.encryptedToken) ||
                     (keyAttributes && !keyAttributes.memLimit)
                 ) {
-                    clearData();
+                    clearLocalStorage();
                     router.push("/");
                     return;
                 }
@@ -231,7 +234,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
                         isTwoFactorEnabled: true,
                         isTwoFactorPasskeysEnabled: true,
                     });
-                    InMemoryStore.set(MS_KEYS.REDIRECT_URL, "/");
+                    stashRedirect("/");
                     const url =
                         passkeyVerificationRedirectURL(passkeySessionID);
                     setPasskeyVerificationData({ passkeySessionID, url });
@@ -312,9 +315,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
             } catch (e) {
                 log.error("migrate to srp failed", e);
             }
-            const redirectURL = InMemoryStore.get(MS_KEYS.REDIRECT_URL);
-            InMemoryStore.delete(MS_KEYS.REDIRECT_URL);
-            router.push(redirectURL ?? appHomeRoute);
+            router.push(unstashRedirect() ?? appHomeRoute);
         } catch (e) {
             log.error("useMasterPassword failed", e);
         }
@@ -323,7 +324,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
     if (!keyAttributes && !srpAttributes) {
         return (
             <VerticallyCentered>
-                <EnteSpinner />
+                <ActivityIndicator />
             </VerticallyCentered>
         );
     }
@@ -341,7 +342,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
         if (!globalThis.electron) {
             return (
                 <VerticallyCentered>
-                    <EnteSpinner />
+                    <ActivityIndicator />
                 </VerticallyCentered>
             );
         }
@@ -353,7 +354,7 @@ const Page: React.FC<PageProps> = ({ appContext }) => {
                 onRetry={() =>
                     openPasskeyVerificationURL(passkeyVerificationData)
                 }
-                {...{ logout, setDialogBoxAttributesV2 }}
+                {...{ logout, showMiniDialog }}
             />
         );
     }

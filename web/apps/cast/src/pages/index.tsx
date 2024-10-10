@@ -1,12 +1,12 @@
+import { ActivityIndicator } from "@/base/components/mui/ActivityIndicator";
 import log from "@/base/log";
-import EnteSpinner from "@ente/shared/components/EnteSpinner";
 import { styled } from "@mui/material";
 import { PairingCode } from "components/PairingCode";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import { readCastData, storeCastData } from "services/cast-data";
 import { getCastData, register } from "services/pair";
-import { advertiseOnChromecast } from "../services/chromecast";
+import { advertiseOnChromecast } from "../services/chromecast-receiver";
 
 export default function Index() {
     const [publicKeyB64, setPublicKeyB64] = useState<string | undefined>();
@@ -102,7 +102,7 @@ const Container = styled("div")`
 
 const Spinner: React.FC = () => (
     <Spinner_>
-        <EnteSpinner />
+        <ActivityIndicator />
     </Spinner_>
 );
 

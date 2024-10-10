@@ -39,10 +39,12 @@ export const Login: React.FC<LoginProps> = ({ signUp, host }) => {
             }
         } catch (e) {
             if (e instanceof Error) {
-                setFieldError(`${t("UNKNOWN_ERROR")} (reason:${e.message})`);
+                setFieldError(
+                    `${t("generic_error_retry")} (reason:${e.message})`,
+                );
             } else {
                 setFieldError(
-                    `${t("UNKNOWN_ERROR")} (reason:${JSON.stringify(e)})`,
+                    `${t("generic_error_retry")} (reason:${JSON.stringify(e)})`,
                 );
             }
         }
@@ -50,12 +52,12 @@ export const Login: React.FC<LoginProps> = ({ signUp, host }) => {
 
     return (
         <>
-            <FormPaperTitle>{t("LOGIN")}</FormPaperTitle>
+            <FormPaperTitle>{t("login")}</FormPaperTitle>
             <SingleInputForm
                 callback={loginUser}
                 fieldType="email"
                 placeholder={t("ENTER_EMAIL")}
-                buttonText={t("LOGIN")}
+                buttonText={t("login")}
                 autoComplete="username"
                 hiddenPostInput={
                     <Input sx={{ display: "none" }} type="password" value="" />

@@ -109,6 +109,7 @@ export const sidebar = [
                 collapsed: true,
                 items: [
                     { text: "General", link: "/photos/faq/general" },
+                    { text: "Installation", link: "/photos/faq/installing" },
                     {
                         text: "Export",
                         link: "/photos/faq/export",
@@ -172,6 +173,7 @@ export const sidebar = [
                 collapsed: true,
                 items: [
                     { text: "General", link: "/auth/faq/" },
+                    { text: "Installation", link: "/auth/faq/installing" },
                     {
                         text: "Enteception",
                         link: "/auth/faq/enteception/",
@@ -202,6 +204,15 @@ export const sidebar = [
                     {
                         text: "Exporting your data",
                         link: "/auth/migration-guides/export",
+                    },
+                ],
+            },
+            {
+                text: "Troubleshooting",
+                items: [
+                    {
+                        text: "Windows login",
+                        link: "/auth/troubleshooting/windows-login",
                     },
                 ],
             },
@@ -245,6 +256,10 @@ export const sidebar = [
                         text: "Using external S3",
                         link: "/self-hosting/guides/external-s3",
                     },
+                    {
+                        text: "DB migration",
+                        link: "/self-hosting/guides/db-migration",
+                    },
                 ],
             },
             {
@@ -258,6 +273,10 @@ export const sidebar = [
                     {
                         text: "Shared albums",
                         link: "/self-hosting/faq/sharing",
+                    },
+                    {
+                        text: "Backups",
+                        link: "/self-hosting/faq/backup",
                     },
                 ],
             },

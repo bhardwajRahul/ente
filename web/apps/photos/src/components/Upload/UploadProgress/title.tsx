@@ -1,16 +1,13 @@
+import { FilledIconButton } from "@/new/photos/components/mui";
 import { UPLOAD_STAGES } from "@/new/photos/services/upload/types";
-import {
-    IconButtonWithBG,
-    SpaceBetweenFlex,
-} from "@ente/shared/components/Container";
+import { SpaceBetweenFlex } from "@ente/shared/components/Container";
 import Close from "@mui/icons-material/Close";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import { Box, DialogTitle, Stack, Typography } from "@mui/material";
 import { t } from "i18next";
 import { useContext } from "react";
-
-import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
-import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
-import UploadProgressContext from "contexts/uploadProgress";
+import UploadProgressContext from "./context";
 
 const UploadProgressTitleText = ({ expanded }) => {
     return (
@@ -24,7 +21,12 @@ function UploadProgressSubtitleText() {
     const { uploadStage, uploadCounter } = useContext(UploadProgressContext);
 
     return (
-        <Typography color="text.muted" marginTop={"4px"}>
+        <Typography
+            variant="body"
+            fontWeight={"normal"}
+            color="text.muted"
+            marginTop={"4px"}
+        >
             {uploadStage === UPLOAD_STAGES.UPLOADING
                 ? t(`UPLOAD_STAGE_MESSAGE.${uploadStage}`, { uploadCounter })
                 : uploadStage === UPLOAD_STAGES.EXTRACTING_METADATA
@@ -49,12 +51,12 @@ export function UploadProgressTitle() {
                 </Box>
                 <Box>
                     <Stack direction={"row"} spacing={1}>
-                        <IconButtonWithBG onClick={toggleExpanded}>
+                        <FilledIconButton onClick={toggleExpanded}>
                             {expanded ? <UnfoldLessIcon /> : <UnfoldMoreIcon />}
-                        </IconButtonWithBG>
-                        <IconButtonWithBG onClick={onClose}>
+                        </FilledIconButton>
+                        <FilledIconButton onClick={onClose}>
                             <Close />
-                        </IconButtonWithBG>
+                        </FilledIconButton>
                     </Stack>
                 </Box>
             </SpaceBetweenFlex>

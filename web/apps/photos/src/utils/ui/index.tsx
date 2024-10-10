@@ -4,23 +4,22 @@ import { openURL } from "@/new/photos/utils/web";
 import { DialogBoxAttributes } from "@ente/shared/components/DialogBox/types";
 import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import InfoOutlined from "@mui/icons-material/InfoRounded";
-import { Link } from "@mui/material";
 import { t } from "i18next";
 import { Trans } from "react-i18next";
 import { Subscription } from "types/billing";
 
 export const getDownloadAppMessage = (): DialogBoxAttributes => {
     return {
-        title: t("DOWNLOAD_APP"),
-        content: t("DOWNLOAD_APP_MESSAGE"),
+        title: t("download_app"),
+        content: t("download_app_message"),
 
         proceed: {
-            text: t("DOWNLOAD"),
+            text: t("download"),
             action: downloadApp,
             variant: "accent",
         },
         close: {
-            text: t("CLOSE"),
+            text: t("close"),
         },
     };
 };
@@ -36,6 +35,7 @@ export const getTrashFilesMessage = (
         action: deleteFileHelper,
         text: t("MOVE_TO_TRASH"),
         variant: "critical",
+        autoFocus: true,
     },
     close: { text: t("cancel") },
 });
@@ -47,6 +47,7 @@ export const getTrashFileMessage = (deleteFileHelper): DialogBoxAttributes => ({
         action: deleteFileHelper,
         text: t("MOVE_TO_TRASH"),
         variant: "critical",
+        autoFocus: true,
     },
     close: { text: t("cancel") },
 });
@@ -123,65 +124,13 @@ export const getSubscriptionPurchaseSuccessMessage = (
 export const getSessionExpiredMessage = (
     action: () => void,
 ): DialogBoxAttributes => ({
-    title: t("SESSION_EXPIRED"),
-    content: t("SESSION_EXPIRED_MESSAGE"),
+    title: t("session_expired"),
+    content: t("session_expired_message"),
 
     nonClosable: true,
     proceed: {
-        text: t("LOGIN"),
+        text: t("login"),
         action,
         variant: "accent",
     },
-});
-
-export const getMapEnableConfirmationDialog = (
-    enableMapHelper,
-): DialogBoxAttributes => ({
-    title: t("ENABLE_MAPS"),
-    content: (
-        <Trans
-            i18nKey={"ENABLE_MAP_DESCRIPTION"}
-            components={{
-                a: (
-                    <Link
-                        target="_blank"
-                        rel="noopener"
-                        href="https://www.openstreetmap.org/"
-                    />
-                ),
-            }}
-        />
-    ),
-    proceed: {
-        action: enableMapHelper,
-        text: t("enable"),
-        variant: "accent",
-    },
-    close: { text: t("cancel") },
-});
-
-export const getMapDisableConfirmationDialog = (
-    disableMapHelper,
-): DialogBoxAttributes => ({
-    title: t("DISABLE_MAPS"),
-    content: <Trans i18nKey={"DISABLE_MAP_DESCRIPTION"} />,
-    proceed: {
-        action: disableMapHelper,
-        text: t("disable"),
-        variant: "accent",
-    },
-    close: { text: t("cancel") },
-});
-
-export const getEditorCloseConfirmationMessage = (
-    doClose: () => void,
-): DialogBoxAttributes => ({
-    title: t("CONFIRM_EDITOR_CLOSE_MESSAGE"),
-    content: t("CONFIRM_EDITOR_CLOSE_DESCRIPTION"),
-    proceed: {
-        action: doClose,
-        text: t("CLOSE"),
-        variant: "critical",
-    },
-    close: { text: t("cancel") },
 });
