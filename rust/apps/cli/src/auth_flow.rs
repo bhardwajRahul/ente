@@ -5,8 +5,8 @@ use crate::{
         error::{Error, Result},
     },
 };
-use base64::{Engine, engine::general_purpose::URL_SAFE};
 
+use ente_core::b64;
 use ente_core::crypto::SecretVec;
 use serde::{Serialize, de::DeserializeOwned};
 use std::fmt;
@@ -250,7 +250,7 @@ where
             .map_err(Error::from)?,
         )?;
         self.app_client
-            .set_token(&URL_SAFE.encode(&account.secrets.token));
+            .set_token(&b64::encode_url_safe(&account.secrets.token));
         Ok(account)
     }
 
@@ -422,7 +422,7 @@ mod tests {
         let email = "fresh-user@example.org";
         let encoded_email = urlencoding::encode(email).into_owned();
         let signup_token_bytes = b"signup-session-token";
-        let signup_token = URL_SAFE.encode(signup_token_bytes);
+        let signup_token = b64::encode_url_safe(signup_token_bytes);
         let signup_state = Arc::new(Mutex::new(MockSignupState::default()));
 
         let mut server = Server::new_async().await;
@@ -495,15 +495,9 @@ mod tests {
             .with_body_from_request(move |request| {
                 let payload: SetupSrpPayload = parse_request_body(request);
                 let srp_user_id = Uuid::parse_str(&payload.srp_user_id).unwrap();
-                let srp_salt = base64::engine::general_purpose::STANDARD
-                    .decode(&payload.srp_salt)
-                    .unwrap();
-                let srp_verifier = base64::engine::general_purpose::STANDARD
-                    .decode(&payload.srp_verifier)
-                    .unwrap();
-                let srp_a = base64::engine::general_purpose::STANDARD
-                    .decode(&payload.srp_a)
-                    .unwrap();
+                let srp_salt = b64::decode(&payload.srp_salt).unwrap();
+                let srp_verifier = b64::decode(&payload.srp_verifier).unwrap();
+                let srp_a = b64::decode(&payload.srp_a).unwrap();
                 let server = ServerG4096::<Sha256>::new();
                 let b_private = [0x33u8; 64];
                 let srp_b = pad_left(
@@ -552,7 +546,7 @@ mod tests {
 
                 serde_json::json!({
                     "setupID": setup_id,
-                    "srpB": base64::engine::general_purpose::STANDARD.encode(&srp_b),
+                    "srpB": b64::encode(&srp_b),
                 })
                 .to_string()
                 .into_bytes()
@@ -569,9 +563,7 @@ mod tests {
             .with_body_from_request(move |request| {
                 let payload: CompleteSrpSetupPayload = parse_request_body(request);
                 let setup_id = Uuid::parse_str(&payload.setup_id).unwrap();
-                let srp_m1 = base64::engine::general_purpose::STANDARD
-                    .decode(&payload.srp_m1)
-                    .unwrap();
+                let srp_m1 = b64::decode(&payload.srp_m1).unwrap();
 
                 let mut state = state.lock().unwrap();
                 assert_eq!(state.pending_setup_id, Some(setup_id));
@@ -579,8 +571,7 @@ mod tests {
 
                 serde_json::json!({
                     "setupID": setup_id,
-                    "srpM2": base64::engine::general_purpose::STANDARD
-                        .encode(state.pending_server_proof.take().unwrap()),
+                    "srpM2": b64::encode(&state.pending_server_proof.take().unwrap()),
                 })
                 .to_string()
                 .into_bytes()

@@ -20,6 +20,9 @@ pub enum Error {
     #[error(transparent)]
     Crypto(#[from] crypto::Error),
 
+    #[error("base64 decode error: {0}")]
+    Base64Decode(#[from] b64::DecodeError),
+
     #[error("incorrect paste password")]
     IncorrectPassword,
 
@@ -446,10 +449,7 @@ mod tests {
         payload.kdf_nonce = "not base64".to_string();
         let error = decrypt(&payload, &paste_key, Some("correct horse")).unwrap_err();
 
-        assert!(matches!(
-            error,
-            Error::Crypto(crypto::Error::Base64Decode(_))
-        ));
+        assert!(matches!(error, Error::Base64Decode(_)));
     }
 
     #[test]
@@ -460,10 +460,7 @@ mod tests {
         payload.encrypted_paste_key = "not base64".to_string();
         let error = decrypt(&payload, &paste_key, Some("correct horse")).unwrap_err();
 
-        assert!(matches!(
-            error,
-            Error::Crypto(crypto::Error::Base64Decode(_))
-        ));
+        assert!(matches!(error, Error::Base64Decode(_)));
     }
 
     #[test]

@@ -3,10 +3,6 @@
 //! This layer is intended for interactive CLI/e2e flows. Callers that need
 //! raw server `code/message/status` should prefer [`crate::client::AccountsClient`].
 
-use base64::{
-    Engine,
-    engine::general_purpose::{STANDARD, URL_SAFE},
-};
 use ente_core::b64;
 use ente_core::crypto::{self, SecretVec, secretbox};
 use std::fmt;
@@ -439,7 +435,7 @@ where
 
         let srp_attributes = self.client.get_srp_attributes(&params.email).await?;
 
-        let expected_salt = STANDARD.encode(&srp_setup.srp_salt);
+        let expected_salt = b64::encode(&srp_setup.srp_salt);
         let mut mismatches = Vec::new();
         if srp_attributes.srp_user_id != srp_user_id {
             mismatches.push("srpUserID");
@@ -856,25 +852,25 @@ where
             &srp_setup.srp_salt,
             &srp_setup.login_sub_key,
         )?;
-        let srp_a = STANDARD.encode(pad_left(&srp_session.public_a(), SRP_A_LEN));
+        let srp_a = b64::encode(&pad_left(&srp_session.public_a(), SRP_A_LEN));
 
         let response = self
             .client
             .setup_srp(&SetupSrpRequest {
                 srp_user_id: srp_user_id.to_string(),
-                srp_salt: STANDARD.encode(&srp_setup.srp_salt),
-                srp_verifier: STANDARD.encode(&srp_setup.srp_verifier),
+                srp_salt: b64::encode(&srp_setup.srp_salt),
+                srp_verifier: b64::encode(&srp_setup.srp_verifier),
                 srp_a,
             })
             .await?;
 
-        let srp_b = STANDARD.decode(&response.srp_b)?;
-        let srp_m1 = STANDARD.encode(srp_session.compute_m1(&srp_b)?);
+        let srp_b = b64::decode(&response.srp_b)?;
+        let srp_m1 = b64::encode(&srp_session.compute_m1(&srp_b)?);
         let complete = self
             .client
             .complete_srp_setup(&response.setup_id, &srp_m1)
             .await?;
-        let srp_m2 = STANDARD.decode(&complete.srp_m2)?;
+        let srp_m2 = b64::decode(&complete.srp_m2)?;
         srp_session.verify_m2(&srp_m2).map_err(Error::from)?;
         Ok(())
     }
@@ -891,20 +887,20 @@ where
             &srp_setup.srp_salt,
             &srp_setup.login_sub_key,
         )?;
-        let srp_a = STANDARD.encode(pad_left(&srp_session.public_a(), SRP_A_LEN));
+        let srp_a = b64::encode(&pad_left(&srp_session.public_a(), SRP_A_LEN));
 
         let setup = self
             .client
             .setup_srp(&SetupSrpRequest {
                 srp_user_id: srp_user_id.to_string(),
-                srp_salt: STANDARD.encode(&srp_setup.srp_salt),
-                srp_verifier: STANDARD.encode(&srp_setup.srp_verifier),
+                srp_salt: b64::encode(&srp_setup.srp_salt),
+                srp_verifier: b64::encode(&srp_setup.srp_verifier),
                 srp_a,
             })
             .await?;
 
-        let srp_b = STANDARD.decode(&setup.srp_b)?;
-        let srp_m1 = STANDARD.encode(srp_session.compute_m1(&srp_b)?);
+        let srp_b = b64::decode(&setup.srp_b)?;
+        let srp_m1 = b64::encode(&srp_session.compute_m1(&srp_b)?);
 
         let response = self
             .client
@@ -916,7 +912,7 @@ where
             })
             .await?;
 
-        let srp_m2 = STANDARD.decode(&response.srp_m2)?;
+        let srp_m2 = b64::decode(&response.srp_m2)?;
         srp_session.verify_m2(&srp_m2).map_err(Error::from)?;
         Ok(response)
     }
@@ -959,9 +955,8 @@ fn pad_left(data: &[u8], len: usize) -> Vec<u8> {
 }
 
 fn decode_plain_token(token: &str) -> Result<SecretVec> {
-    let bytes = URL_SAFE
-        .decode(token)
-        .or_else(|_| STANDARD.decode(token))
+    let bytes = b64::decode_url_safe(token)
+        .or_else(|_| b64::decode(token))
         .map_err(|e| Error::Crypto(format!("token: {e}")))?;
     Ok(SecretVec::new(bytes))
 }
@@ -991,7 +986,7 @@ fn validate_remote_srp_attributes(
     srp_setup: &GeneratedSrpSetup,
     key_attributes: &KeyAttributes,
 ) -> Result<()> {
-    let expected_salt = STANDARD.encode(&srp_setup.srp_salt);
+    let expected_salt = b64::encode(&srp_setup.srp_salt);
     let mut mismatches = Vec::new();
 
     if remote.srp_user_id != *srp_user_id {
@@ -1251,7 +1246,7 @@ mod tests {
                 serde_json::json!({
                     "attributes": {
                         "srpUserID": Uuid::new_v4(),
-                        "srpSalt": STANDARD.encode([1u8; 16]),
+                        "srpSalt": b64::encode(&[1u8; 16]),
                         "memLimit": key_attributes.mem_limit,
                         "opsLimit": key_attributes.ops_limit,
                         "kekSalt": key_attributes.kek_salt,
@@ -1340,7 +1335,7 @@ mod tests {
                 serde_json::json!({
                     "attributes": {
                         "srpUserID": Uuid::new_v4(),
-                        "srpSalt": STANDARD.encode([1u8; 16]),
+                        "srpSalt": b64::encode(&[1u8; 16]),
                         "memLimit": key_attributes.mem_limit,
                         "opsLimit": key_attributes.ops_limit,
                         "kekSalt": key_attributes.kek_salt,
@@ -1416,7 +1411,7 @@ mod tests {
                 serde_json::json!({
                     "attributes": {
                         "srpUserID": Uuid::new_v4(),
-                        "srpSalt": STANDARD.encode([1u8; 16]),
+                        "srpSalt": b64::encode(&[1u8; 16]),
                         "memLimit": key_attributes.mem_limit,
                         "opsLimit": key_attributes.ops_limit,
                         "kekSalt": key_attributes.kek_salt,
@@ -1502,7 +1497,7 @@ mod tests {
                 serde_json::json!({
                     "attributes": {
                         "srpUserID": Uuid::new_v4(),
-                        "srpSalt": STANDARD.encode([1u8; 16]),
+                        "srpSalt": b64::encode(&[1u8; 16]),
                         "memLimit": key_attributes.mem_limit,
                         "opsLimit": key_attributes.ops_limit,
                         "kekSalt": key_attributes.kek_salt,
@@ -1692,7 +1687,7 @@ mod tests {
                 serde_json::json!({
                     "attributes": {
                         "srpUserID": Uuid::new_v4(),
-                        "srpSalt": STANDARD.encode([1u8; 16]),
+                        "srpSalt": b64::encode(&[1u8; 16]),
                         "memLimit": key_attributes.mem_limit,
                         "opsLimit": key_attributes.ops_limit,
                         "kekSalt": key_attributes.kek_salt,
@@ -1765,7 +1760,7 @@ mod tests {
         let email = "fresh-user@example.org";
         let encoded_email = urlencoding::encode(email).into_owned();
         let signup_token_bytes = b"signup-session-token";
-        let signup_token = URL_SAFE.encode(signup_token_bytes);
+        let signup_token = b64::encode_url_safe(signup_token_bytes);
         let signup_state = Arc::new(Mutex::new(MockSignupState::default()));
 
         let mut server = Server::new_async().await;
@@ -1853,9 +1848,9 @@ mod tests {
             .with_body_from_request(move |request| {
                 let payload: SetupSrpPayload = parse_request_body(request);
                 let srp_user_id = Uuid::parse_str(&payload.srp_user_id).unwrap();
-                let srp_salt = STANDARD.decode(&payload.srp_salt).unwrap();
-                let srp_verifier = STANDARD.decode(&payload.srp_verifier).unwrap();
-                let srp_a = STANDARD.decode(&payload.srp_a).unwrap();
+                let srp_salt = b64::decode(&payload.srp_salt).unwrap();
+                let srp_verifier = b64::decode(&payload.srp_verifier).unwrap();
+                let srp_a = b64::decode(&payload.srp_a).unwrap();
                 let server = ServerG4096::<Sha256>::new();
                 let b_private = [0x33u8; 64];
                 let srp_b = pad_left(
@@ -1904,7 +1899,7 @@ mod tests {
 
                 serde_json::json!({
                     "setupID": setup_id,
-                    "srpB": STANDARD.encode(&srp_b),
+                    "srpB": b64::encode(&srp_b),
                 })
                 .to_string()
                 .into_bytes()
@@ -1921,7 +1916,7 @@ mod tests {
             .with_body_from_request(move |request| {
                 let payload: CompleteSrpSetupPayload = parse_request_body(request);
                 let setup_id = Uuid::parse_str(&payload.setup_id).unwrap();
-                let srp_m1 = STANDARD.decode(&payload.srp_m1).unwrap();
+                let srp_m1 = b64::decode(&payload.srp_m1).unwrap();
 
                 let mut state = state.lock().unwrap();
                 assert_eq!(state.pending_setup_id, Some(setup_id));
@@ -1929,7 +1924,7 @@ mod tests {
 
                 serde_json::json!({
                     "setupID": setup_id,
-                    "srpM2": STANDARD.encode(state.pending_server_proof.take().unwrap()),
+                    "srpM2": b64::encode(&state.pending_server_proof.take().unwrap()),
                 })
                 .to_string()
                 .into_bytes()
@@ -2002,9 +1997,9 @@ mod tests {
             .with_status(200)
             .with_body_from_request(move |request| {
                 let payload: SetupSrpPayload = parse_request_body(request);
-                let srp_salt = STANDARD.decode(&payload.srp_salt).unwrap();
-                let srp_verifier = STANDARD.decode(&payload.srp_verifier).unwrap();
-                let srp_a = STANDARD.decode(&payload.srp_a).unwrap();
+                let srp_salt = b64::decode(&payload.srp_salt).unwrap();
+                let srp_verifier = b64::decode(&payload.srp_verifier).unwrap();
+                let srp_a = b64::decode(&payload.srp_a).unwrap();
                 let server = ServerG4096::<Sha256>::new();
                 let b_private = [0x44u8; 64];
                 let srp_b = pad_left(
@@ -2052,7 +2047,7 @@ mod tests {
 
                 serde_json::json!({
                     "setupID": setup_id,
-                    "srpB": STANDARD.encode(&srp_b),
+                    "srpB": b64::encode(&srp_b),
                 })
                 .to_string()
                 .into_bytes()
@@ -2073,7 +2068,7 @@ mod tests {
                     state.pending_setup_id.unwrap().to_string()
                 );
                 assert_eq!(
-                    STANDARD.decode(&payload.srp_m1).unwrap(),
+                    b64::decode(&payload.srp_m1).unwrap(),
                     state.pending_client_proof.as_ref().unwrap().clone()
                 );
                 assert!(payload.log_out_other_devices);
@@ -2086,7 +2081,7 @@ mod tests {
                     });
                 serde_json::json!({
                     "setupID": payload.setup_id,
-                    "srpM2": STANDARD.encode(state.pending_server_proof.as_ref().unwrap()),
+                    "srpM2": b64::encode(state.pending_server_proof.as_ref().unwrap()),
                 })
                 .to_string()
                 .into_bytes()

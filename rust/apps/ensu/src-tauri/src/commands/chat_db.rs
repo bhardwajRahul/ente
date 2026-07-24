@@ -47,6 +47,7 @@ impl From<db::Error> for ApiError {
             E::InvalidSender(_) => "db_invalid_sender",
             E::NotFound { .. } => "db_not_found",
             E::Crypto(_) => "db_crypto",
+            E::Base64Decode(_) => "db_base64_decode",
             E::SerdeJson(_) => "db_serde_json",
             E::Uuid(_) => "db_uuid",
             E::Utf8(_) => "db_utf8",

@@ -5,16 +5,11 @@ use base64::{
     engine::general_purpose::{STANDARD, URL_SAFE, URL_SAFE_NO_PAD},
 };
 
-use crate::crypto::Result;
+pub use base64::DecodeError;
 
 /// Decode a standard base64 string to bytes, the inverse of [`encode`].
-///
-/// # Errors
-///
-/// Returns [`Base64Decode`](crate::crypto::Error::Base64Decode) if
-/// `input` is not valid standard base64.
-pub fn decode(input: &str) -> Result<Vec<u8>> {
-    Ok(STANDARD.decode(input)?)
+pub fn decode(input: &str) -> Result<Vec<u8>, DecodeError> {
+    STANDARD.decode(input)
 }
 
 /// Encode bytes to a standard base64 string, the inverse of [`decode`].
@@ -33,6 +28,12 @@ pub fn encode_url_safe(input: &[u8]) -> String {
     URL_SAFE.encode(input)
 }
 
+/// Decode a URL-safe base64 string to bytes, the inverse of
+/// [`encode_url_safe`].
+pub fn decode_url_safe(input: &str) -> Result<Vec<u8>, DecodeError> {
+    URL_SAFE.decode(input)
+}
+
 /// Encode bytes to an unpadded URL-safe base64 string.
 ///
 /// Like [`encode_url_safe`] but without trailing "=" padding, as required
@@ -43,13 +44,8 @@ pub fn encode_url_safe_no_padding(input: &[u8]) -> String {
 
 /// Decode an unpadded URL-safe base64 string to bytes, the inverse of
 /// [`encode_url_safe_no_padding`].
-///
-/// # Errors
-///
-/// Returns [`Base64Decode`](crate::crypto::Error::Base64Decode) if
-/// `input` is not valid unpadded URL-safe base64.
-pub fn decode_url_safe_no_padding(input: &str) -> Result<Vec<u8>> {
-    Ok(URL_SAFE_NO_PAD.decode(input)?)
+pub fn decode_url_safe_no_padding(input: &str) -> Result<Vec<u8>, DecodeError> {
+    URL_SAFE_NO_PAD.decode(input)
 }
 
 #[cfg(test)]

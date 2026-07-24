@@ -53,6 +53,7 @@ impl From<ente_space::SpaceError> for WasmSpaceError {
             ente_space::SpaceError::Http(http::Error::Network(_)) => ("network", None),
             ente_space::SpaceError::Http(http::Error::Parse(_)) => ("parse", None),
             ente_space::SpaceError::Crypto(_) => ("crypto", None),
+            ente_space::SpaceError::Base64Decode(_) => ("base64_decode", None),
             ente_space::SpaceError::InvalidInput(_) => ("invalid_input", None),
             ente_space::SpaceError::MissingSecretKey => ("missing_secret_key", None),
             ente_space::SpaceError::MissingFriendSealedSpaceKey => {

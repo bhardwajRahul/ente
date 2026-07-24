@@ -1,9 +1,5 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use base64::{
-    Engine,
-    engine::general_purpose::{STANDARD, URL_SAFE},
-};
 use ente_accounts::auth::{SrpSession, generate_srp_setup_with_login_key};
 use ente_accounts::{
     AccountsClient, AccountsClientConfig, AuthFlow, AuthFlowUi, AuthenticatedAccount,
@@ -208,15 +204,15 @@ pub async fn create_fixture_account(endpoint: &str, email_prefix: &str) -> TestA
     let response = client
         .setup_srp(&SetupSrpRequest {
             srp_user_id: srp_user_id.to_string(),
-            srp_salt: STANDARD.encode(&srp_setup.srp_salt),
-            srp_verifier: STANDARD.encode(&srp_setup.srp_verifier),
-            srp_a: STANDARD.encode(pad_left(&srp_session.public_a(), SRP_A_LEN)),
+            srp_salt: b64::encode(&srp_setup.srp_salt),
+            srp_verifier: b64::encode(&srp_setup.srp_verifier),
+            srp_a: b64::encode(&pad_left(&srp_session.public_a(), SRP_A_LEN)),
         })
         .await
         .unwrap();
-    let srp_m1 = STANDARD.encode(
-        srp_session
-            .compute_m1(&STANDARD.decode(&response.srp_b).unwrap())
+    let srp_m1 = b64::encode(
+        &srp_session
+            .compute_m1(&b64::decode(&response.srp_b).unwrap())
             .unwrap(),
     );
     let complete = client
@@ -224,7 +220,7 @@ pub async fn create_fixture_account(endpoint: &str, email_prefix: &str) -> TestA
         .await
         .unwrap();
     srp_session
-        .verify_m2(&STANDARD.decode(&complete.srp_m2).unwrap())
+        .verify_m2(&b64::decode(&complete.srp_m2).unwrap())
         .unwrap();
 
     TestAccount {
@@ -303,7 +299,7 @@ async fn fetch_two_factor_status_with_token(
 }
 
 fn auth_token_from_authenticated(account: &AuthenticatedAccount) -> String {
-    URL_SAFE.encode(&account.secrets.token)
+    b64::encode_url_safe(&account.secrets.token)
 }
 
 pub fn test_account_from_authenticated(

@@ -1,5 +1,5 @@
 use ente_accounts::auth;
-use ente_core::crypto;
+use ente_core::{b64, crypto};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -32,7 +32,7 @@ pub enum Error {
     Srp(String),
 
     #[error("Base64 decode error: {0}")]
-    Base64Decode(#[from] base64::DecodeError),
+    Base64Decode(#[from] b64::DecodeError),
 
     #[error("ZIP error: {0}")]
     Zip(#[from] zip::result::ZipError),
@@ -62,7 +62,6 @@ impl From<ente_paste::Error> for Error {
 impl From<crypto::Error> for Error {
     fn from(err: crypto::Error) -> Self {
         match err {
-            crypto::Error::Base64Decode(source) => Error::Base64Decode(source),
             crypto::Error::Io(source) => Error::Io(source),
             other => Error::Crypto(other.to_string()),
         }

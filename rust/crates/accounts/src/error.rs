@@ -1,7 +1,6 @@
 //! Shared error types for account flows.
 
-use base64::DecodeError;
-use ente_core::{crypto, http};
+use ente_core::{b64, crypto, http};
 use thiserror::Error;
 
 use crate::auth;
@@ -38,7 +37,7 @@ pub enum Error {
 
     /// Base64 decode error.
     #[error("Base64 decode error: {0}")]
-    Base64Decode(#[from] DecodeError),
+    Base64Decode(#[from] b64::DecodeError),
 
     /// Fallback catch-all.
     #[error("{0}")]
@@ -64,7 +63,6 @@ impl Error {
 impl From<crypto::Error> for Error {
     fn from(err: crypto::Error) -> Self {
         match err {
-            crypto::Error::Base64Decode(source) => Error::Base64Decode(source),
             crypto::Error::Io(source) => Error::Generic(source.to_string()),
             other => Error::Crypto(other.to_string()),
         }

@@ -32,7 +32,6 @@ impl From<crypto::Error> for CryptoError {
         use crypto::Error as E;
 
         let code = match &e {
-            E::Base64Decode(_) => "base64_decode",
             E::InvalidKeyLength { .. } => "invalid_key_length",
             E::InvalidNonceLength { .. } => "invalid_nonce_length",
             E::InvalidSaltLength { .. } => "invalid_salt_length",
@@ -60,6 +59,15 @@ impl From<crypto::Error> for CryptoError {
         Self {
             code,
             message: ente_core::error::chain(&e),
+        }
+    }
+}
+
+impl From<b64::DecodeError> for CryptoError {
+    fn from(e: b64::DecodeError) -> Self {
+        Self {
+            code: "base64_decode".to_string(),
+            message: e.to_string(),
         }
     }
 }

@@ -7,13 +7,13 @@ use crate::{
     },
     storage::Storage,
 };
-use base64::Engine;
 use dialoguer::{Input, Password, Select};
 use ente_accounts::{
     AccountsClient, AccountsClientConfig, AuthFlow, AuthFlowUi, AuthenticatedAccount,
     CreateAccountParams, LoginParams, OtpPurpose, SecondFactorMethod, SetupTwoFactorParams,
     TotpPurpose,
 };
+use ente_core::b64;
 use ente_core::crypto::SecretVec;
 use ente_core::urls::PRODUCTION_API_ORIGIN;
 use std::{path::PathBuf, str::FromStr};
@@ -427,7 +427,7 @@ async fn enable_two_factor(
         .ok_or_else(|| Error::NotFound(format!("Secrets not found for account {email}")))?;
 
     let client = new_accounts_client(&account.endpoint, app)?;
-    let token = base64::engine::general_purpose::URL_SAFE.encode(&secrets.token);
+    let token = b64::encode_url_safe(&secrets.token);
     client.set_auth_token(Some(token));
 
     let mut ui = DialoguerAuthFlowUi::new(None, totp_code, Some(SecondFactorMethod::Totp));
@@ -481,7 +481,7 @@ async fn get_token(storage: &Storage, email: &str, app_str: &str) -> Result<()> 
         .get_secrets(account.user_id, account.app)?
         .ok_or_else(|| Error::NotFound(format!("Secrets not found for account {email}")))?;
 
-    let token = base64::engine::general_purpose::URL_SAFE.encode(&secrets.token);
+    let token = b64::encode_url_safe(&secrets.token);
     println!("{token}");
 
     Ok(())
