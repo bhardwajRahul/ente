@@ -7,11 +7,11 @@ use base64::{
 use ente_accounts::auth::{SrpSession, generate_srp_setup_with_login_key};
 use ente_accounts::{
     AccountsClient, AccountsClientConfig, AuthFlow, AuthFlowUi, AuthenticatedAccount,
-    CreateAccountParams, Error as CliError, KeyAttributes, LoginParams, OtpPurpose,
-    Result as CliResult, SecondFactorMethod, SetupTwoFactorParams, TotpPurpose,
-    models::SetupSrpRequest,
+    CreateAccountParams, KeyAttributes, LoginParams, OtpPurpose, SecondFactorMethod,
+    SetupTwoFactorParams, TotpPurpose, models::SetupSrpRequest,
 };
-use ente_core::crypto::{Key, SecretKey, SecretVec, decode_b64, encode_b64, kdf, secretbox};
+use ente_core::b64;
+use ente_core::crypto::{Key, SecretKey, SecretVec, kdf, secretbox};
 use ente_test_support::{HARDCODED_OTT, account_fixture};
 use hmac::{Hmac, KeyInit, Mac};
 use sha1::Sha1;
@@ -64,47 +64,51 @@ impl AuthFlowUi for TestUi {
         _email: &str,
         _purpose: OtpPurpose,
         _resent: bool,
-    ) -> CliResult<String> {
+    ) -> ente_accounts::Result<String> {
         Ok(self.otp.clone())
     }
 
-    fn read_totp_code(&mut self, _purpose: TotpPurpose) -> CliResult<String> {
+    fn read_totp_code(&mut self, _purpose: TotpPurpose) -> ente_accounts::Result<String> {
         if !self.allow_totp {
-            return Err(CliError::InvalidInput(
+            return Err(ente_accounts::Error::InvalidInput(
                 "TOTP was requested unexpectedly in this e2e flow".into(),
             ));
         }
 
         let secret = self.totp_secret.as_deref().ok_or_else(|| {
-            CliError::InvalidInput("No TOTP secret captured for rust e2e flow".into())
+            ente_accounts::Error::InvalidInput("No TOTP secret captured for rust e2e flow".into())
         })?;
         Ok(current_totp(secret))
     }
 
-    fn report_retryable_error(&mut self, _message: &str) -> CliResult<()> {
+    fn report_retryable_error(&mut self, _message: &str) -> ente_accounts::Result<()> {
         Ok(())
     }
 
     fn choose_second_factor(
         &mut self,
         _methods: &[SecondFactorMethod],
-    ) -> CliResult<SecondFactorMethod> {
+    ) -> ente_accounts::Result<SecondFactorMethod> {
         Ok(SecondFactorMethod::Totp)
     }
 
-    fn present_passkey_verification(&mut self, _url: &str) -> CliResult<()> {
-        Err(CliError::InvalidInput(
+    fn present_passkey_verification(&mut self, _url: &str) -> ente_accounts::Result<()> {
+        Err(ente_accounts::Error::InvalidInput(
             "Passkey flow not expected in rust e2e tests".into(),
         ))
     }
 
-    fn wait_for_passkey_verification(&mut self) -> CliResult<()> {
-        Err(CliError::InvalidInput(
+    fn wait_for_passkey_verification(&mut self) -> ente_accounts::Result<()> {
+        Err(ente_accounts::Error::InvalidInput(
             "Passkey flow not expected in rust e2e tests".into(),
         ))
     }
 
-    fn present_totp_secret(&mut self, secret_code: &str, _qr_code: &str) -> CliResult<()> {
+    fn present_totp_secret(
+        &mut self,
+        secret_code: &str,
+        _qr_code: &str,
+    ) -> ente_accounts::Result<()> {
         self.totp_secret = Some(secret_code.to_string());
         Ok(())
     }
@@ -154,7 +158,7 @@ pub async fn create_fixture_account(endpoint: &str, email_prefix: &str) -> TestA
     let auth_token = verification.token.expect("signup should return a token");
     client.set_auth_token(Some(auth_token.clone()));
 
-    let kek = Key::try_from_slice(&decode_b64(account_fixture::KEK).unwrap()).unwrap();
+    let kek = Key::try_from_slice(&b64::decode(account_fixture::KEK).unwrap()).unwrap();
     let master_key = Key::generate();
     let recovery_key = Key::generate();
     let secret_key = SecretKey::generate();
@@ -166,23 +170,23 @@ pub async fn create_fixture_account(endpoint: &str, email_prefix: &str) -> TestA
     let key_attributes = KeyAttributes {
         kek_salt: account_fixture::KEK_SALT.into(),
         kek_hash: None,
-        encrypted_key: encode_b64(&encrypted_master_key.encrypted_data),
-        key_decryption_nonce: encode_b64(encrypted_master_key.nonce.as_bytes()),
-        public_key: encode_b64(public_key.as_bytes()),
-        encrypted_secret_key: encode_b64(&encrypted_secret_key.encrypted_data),
-        secret_key_decryption_nonce: encode_b64(encrypted_secret_key.nonce.as_bytes()),
+        encrypted_key: b64::encode(&encrypted_master_key.encrypted_data),
+        key_decryption_nonce: b64::encode(encrypted_master_key.nonce.as_bytes()),
+        public_key: b64::encode(public_key.as_bytes()),
+        encrypted_secret_key: b64::encode(&encrypted_secret_key.encrypted_data),
+        secret_key_decryption_nonce: b64::encode(encrypted_secret_key.nonce.as_bytes()),
         mem_limit: account_fixture::MEM_LIMIT,
         ops_limit: account_fixture::OPS_LIMIT,
-        master_key_encrypted_with_recovery_key: Some(encode_b64(
+        master_key_encrypted_with_recovery_key: Some(b64::encode(
             &encrypted_master_with_recovery.encrypted_data,
         )),
-        master_key_decryption_nonce: Some(encode_b64(
+        master_key_decryption_nonce: Some(b64::encode(
             encrypted_master_with_recovery.nonce.as_bytes(),
         )),
-        recovery_key_encrypted_with_master_key: Some(encode_b64(
+        recovery_key_encrypted_with_master_key: Some(b64::encode(
             &encrypted_recovery_with_master.encrypted_data,
         )),
-        recovery_key_decryption_nonce: Some(encode_b64(
+        recovery_key_decryption_nonce: Some(b64::encode(
             encrypted_recovery_with_master.nonce.as_bytes(),
         )),
     };
@@ -237,7 +241,7 @@ pub async fn login_without_totp(
     endpoint: &str,
     email: &str,
     password: &str,
-) -> CliResult<AuthenticatedAccount> {
+) -> ente_accounts::Result<AuthenticatedAccount> {
     let mut ui = TestUi::otp_only();
     login_with_ui(endpoint, email, password, &mut ui).await
 }
@@ -247,7 +251,7 @@ async fn login_with_ui<U: AuthFlowUi>(
     email: &str,
     password: &str,
     ui: &mut U,
-) -> CliResult<AuthenticatedAccount> {
+) -> ente_accounts::Result<AuthenticatedAccount> {
     let client = accounts_client(endpoint)?;
 
     tokio::time::timeout(Duration::from_secs(90), async {
@@ -282,11 +286,17 @@ pub async fn enable_totp(endpoint: &str, account: &TestAccount) -> String {
     result.secret_code
 }
 
-pub async fn fetch_two_factor_status(endpoint: &str, account: &TestAccount) -> CliResult<bool> {
+pub async fn fetch_two_factor_status(
+    endpoint: &str,
+    account: &TestAccount,
+) -> ente_accounts::Result<bool> {
     fetch_two_factor_status_with_token(endpoint, &account.auth_token).await
 }
 
-async fn fetch_two_factor_status_with_token(endpoint: &str, auth_token: &str) -> CliResult<bool> {
+async fn fetch_two_factor_status_with_token(
+    endpoint: &str,
+    auth_token: &str,
+) -> ente_accounts::Result<bool> {
     let client = accounts_client(endpoint)?;
     client.set_auth_token(Some(auth_token.to_string()));
     client.get_two_factor_status().await
@@ -365,7 +375,7 @@ fn decode_base32(secret: &str) -> Vec<u8> {
     output
 }
 
-fn accounts_client(endpoint: &str) -> CliResult<AccountsClient> {
+fn accounts_client(endpoint: &str) -> ente_accounts::Result<AccountsClient> {
     AccountsClient::new(
         AccountsClientConfig::new(CLIENT_PACKAGE)
             .with_origin(endpoint.to_string())

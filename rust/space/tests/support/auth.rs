@@ -4,7 +4,8 @@ use ente_accounts::{
     auth::{SrpSession, generate_srp_setup_with_login_key},
     models::SetupSrpRequest,
 };
-use ente_core::crypto::{Key, SecretKey, decode_b64, encode_b64, kdf, secretbox};
+use ente_core::b64;
+use ente_core::crypto::{Key, SecretKey, kdf, secretbox};
 use ente_test_support::{HARDCODED_OTT, HARDCODED_OTT_EMAIL_SUFFIX, account_fixture};
 use uuid::Uuid;
 
@@ -37,7 +38,7 @@ pub async fn create_account(endpoint: &str, email_prefix: &str) -> TestAccount {
     let auth_token = verification.token.expect("signup should return a token");
     client.set_auth_token(Some(auth_token.clone()));
 
-    let kek = Key::try_from_slice(&decode_b64(account_fixture::KEK).unwrap()).unwrap();
+    let kek = Key::try_from_slice(&b64::decode(account_fixture::KEK).unwrap()).unwrap();
     let master_key = Key::generate();
     let recovery_key = Key::generate();
     let secret_key = SecretKey::generate();
@@ -49,23 +50,23 @@ pub async fn create_account(endpoint: &str, email_prefix: &str) -> TestAccount {
     let key_attributes = KeyAttributes {
         kek_salt: account_fixture::KEK_SALT.into(),
         kek_hash: None,
-        encrypted_key: encode_b64(&encrypted_master_key.encrypted_data),
-        key_decryption_nonce: encode_b64(encrypted_master_key.nonce.as_bytes()),
-        public_key: encode_b64(public_key.as_bytes()),
-        encrypted_secret_key: encode_b64(&encrypted_secret_key.encrypted_data),
-        secret_key_decryption_nonce: encode_b64(encrypted_secret_key.nonce.as_bytes()),
+        encrypted_key: b64::encode(&encrypted_master_key.encrypted_data),
+        key_decryption_nonce: b64::encode(encrypted_master_key.nonce.as_bytes()),
+        public_key: b64::encode(public_key.as_bytes()),
+        encrypted_secret_key: b64::encode(&encrypted_secret_key.encrypted_data),
+        secret_key_decryption_nonce: b64::encode(encrypted_secret_key.nonce.as_bytes()),
         mem_limit: account_fixture::MEM_LIMIT,
         ops_limit: account_fixture::OPS_LIMIT,
-        master_key_encrypted_with_recovery_key: Some(encode_b64(
+        master_key_encrypted_with_recovery_key: Some(b64::encode(
             &encrypted_master_with_recovery.encrypted_data,
         )),
-        master_key_decryption_nonce: Some(encode_b64(
+        master_key_decryption_nonce: Some(b64::encode(
             encrypted_master_with_recovery.nonce.as_bytes(),
         )),
-        recovery_key_encrypted_with_master_key: Some(encode_b64(
+        recovery_key_encrypted_with_master_key: Some(b64::encode(
             &encrypted_recovery_with_master.encrypted_data,
         )),
-        recovery_key_decryption_nonce: Some(encode_b64(
+        recovery_key_decryption_nonce: Some(b64::encode(
             encrypted_recovery_with_master.nonce.as_bytes(),
         )),
     };

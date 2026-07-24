@@ -4,7 +4,7 @@ use base64::DecodeError;
 use ente_core::{crypto, http};
 use thiserror::Error;
 
-use crate::auth::AuthError;
+use crate::auth;
 
 /// Result alias for the shared account crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -71,22 +71,21 @@ impl From<crypto::Error> for Error {
     }
 }
 
-impl From<AuthError> for Error {
-    fn from(err: AuthError) -> Self {
+impl From<auth::Error> for Error {
+    fn from(err: auth::Error) -> Self {
+        use auth::Error as E;
         match err {
-            AuthError::IncorrectPassword => {
-                Error::AuthenticationFailed("Incorrect password".to_string())
-            }
-            AuthError::IncorrectRecoveryKey => {
+            E::IncorrectPassword => Error::AuthenticationFailed("Incorrect password".to_string()),
+            E::IncorrectRecoveryKey => {
                 Error::AuthenticationFailed("Incorrect recovery key".to_string())
             }
-            AuthError::InvalidKeyAttributes => Error::Crypto(err.to_string()),
-            AuthError::InsufficientMemory => Error::Crypto(err.to_string()),
-            AuthError::MissingField(field) => Error::Crypto(format!("Missing field: {field}")),
-            AuthError::Crypto(source) => source.into(),
-            AuthError::Decode(msg) => Error::Crypto(msg),
-            AuthError::InvalidKey(msg) => Error::Crypto(msg),
-            AuthError::Srp(msg) => Error::Srp(msg),
+            E::InvalidKeyAttributes => Error::Crypto(err.to_string()),
+            E::InsufficientMemory => Error::Crypto(err.to_string()),
+            E::MissingField(field) => Error::Crypto(format!("Missing field: {field}")),
+            E::Crypto(source) => source.into(),
+            E::Decode(msg) => Error::Crypto(msg),
+            E::InvalidKey(msg) => Error::Crypto(msg),
+            E::Srp(msg) => Error::Srp(msg),
         }
     }
 }

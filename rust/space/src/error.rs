@@ -1,13 +1,13 @@
-use ente_core::{crypto::Error as CryptoError, http::Error as HttpError};
+use ente_core::{crypto, http};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum SpaceError {
     #[error(transparent)]
-    Http(#[from] HttpError),
+    Http(#[from] http::Error),
 
     #[error(transparent)]
-    Crypto(#[from] CryptoError),
+    Crypto(#[from] crypto::Error),
 
     #[error("invalid input: {0}")]
     InvalidInput(String),

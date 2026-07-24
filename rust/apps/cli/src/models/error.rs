@@ -1,5 +1,4 @@
-use ente_accounts::Error as AccountsError;
-use ente_accounts::auth::AuthError;
+use ente_accounts::auth;
 use ente_core::crypto;
 use thiserror::Error;
 
@@ -70,37 +69,37 @@ impl From<crypto::Error> for Error {
     }
 }
 
-impl From<AuthError> for Error {
-    fn from(err: AuthError) -> Self {
+impl From<auth::Error> for Error {
+    fn from(err: auth::Error) -> Self {
+        use auth::Error as E;
         match err {
-            AuthError::IncorrectPassword => {
-                Error::AuthenticationFailed("Incorrect password".to_string())
-            }
-            AuthError::IncorrectRecoveryKey => {
+            E::IncorrectPassword => Error::AuthenticationFailed("Incorrect password".to_string()),
+            E::IncorrectRecoveryKey => {
                 Error::AuthenticationFailed("Incorrect recovery key".to_string())
             }
-            AuthError::InvalidKeyAttributes => Error::Crypto(err.to_string()),
-            AuthError::InsufficientMemory => Error::Crypto(err.to_string()),
-            AuthError::MissingField(field) => Error::Crypto(format!("Missing field: {field}")),
-            AuthError::Crypto(source) => source.into(),
-            AuthError::Decode(msg) => Error::Crypto(msg),
-            AuthError::InvalidKey(msg) => Error::Crypto(msg),
-            AuthError::Srp(msg) => Error::Srp(msg),
+            E::InvalidKeyAttributes => Error::Crypto(err.to_string()),
+            E::InsufficientMemory => Error::Crypto(err.to_string()),
+            E::MissingField(field) => Error::Crypto(format!("Missing field: {field}")),
+            E::Crypto(source) => source.into(),
+            E::Decode(msg) => Error::Crypto(msg),
+            E::InvalidKey(msg) => Error::Crypto(msg),
+            E::Srp(msg) => Error::Srp(msg),
         }
     }
 }
 
-impl From<AccountsError> for Error {
-    fn from(err: AccountsError) -> Self {
+impl From<ente_accounts::Error> for Error {
+    fn from(err: ente_accounts::Error) -> Self {
+        use ente_accounts::Error as E;
         match err {
-            AccountsError::Http(error) => Error::from(error),
-            AccountsError::Serialization(source) => Error::Serialization(source),
-            AccountsError::Crypto(message) => Error::Crypto(message),
-            AccountsError::AuthenticationFailed(message) => Error::AuthenticationFailed(message),
-            AccountsError::InvalidInput(message) => Error::InvalidInput(message),
-            AccountsError::Srp(message) => Error::Srp(message),
-            AccountsError::Base64Decode(source) => Error::Base64Decode(source),
-            AccountsError::Generic(message) => Error::Generic(message),
+            E::Http(error) => Error::from(error),
+            E::Serialization(source) => Error::Serialization(source),
+            E::Crypto(message) => Error::Crypto(message),
+            E::AuthenticationFailed(message) => Error::AuthenticationFailed(message),
+            E::InvalidInput(message) => Error::InvalidInput(message),
+            E::Srp(message) => Error::Srp(message),
+            E::Base64Decode(source) => Error::Base64Decode(source),
+            E::Generic(message) => Error::Generic(message),
         }
     }
 }
